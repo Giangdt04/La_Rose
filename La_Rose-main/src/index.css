@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import "tailwindcss";
+body {
+    box-sizing: border-box;
+}
+.bg-rose-gradient { background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); }
+.bg-gold-gradient { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+.text-rose-deep { color: #be185d; }
+.text-gold-deep { color: #d97706; }
+.shadow-rose { box-shadow: 0 10px 25px rgba(244, 114, 182, 0.15); }
+.hover-lift { transition: transform 0.3s ease; }
+.hover-lift:hover { transform: translateY(-5px); }
+.glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.9); }
+.animate-fade-in { animation: fadeIn 0.6s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.hero-bg { background: linear-gradient(rgba(244, 114, 182, 0.1), rgba(244, 114, 182, 0.2)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><rect fill="%23fdf2f8" width="1200" height="800"/><circle fill="%23f9a8d4" cx="200" cy="150" r="80" opacity="0.3"/><circle fill="%23fbbf24" cx="1000" cy="200" r="60" opacity="0.4"/><circle fill="%23ec4899" cx="800" cy="600" r="100" opacity="0.2"/><circle fill="%23fde68a" cx="300" cy="500" r="70" opacity="0.3"/></svg>'); background-size: cover; background-position: center; }

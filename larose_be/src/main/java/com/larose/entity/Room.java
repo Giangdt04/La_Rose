@@ -1,0 +1,55 @@
+package com.larose.entity;
+
+import com.larose.entity.enums.RoomStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "rooms")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Room {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "code", nullable = false, unique = true, length = 50)
+    private String code;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_type_id", nullable = false)
+    private RoomType roomType;  // RoomType giờ có id là Short
+
+    @Column(name = "title", length = 255)
+    private String title;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "capacity")
+    private Integer capacity = 1;
+
+    @Column(name = "price", precision = 10, scale = 2)
+    private BigDecimal price = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private RoomStatus status = RoomStatus.AVAILABLE;
+
+    @Column(name = "amenities", columnDefinition = "JSON")
+    private String amenities;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+}

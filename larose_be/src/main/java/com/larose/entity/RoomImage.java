@@ -1,0 +1,31 @@
+package com.larose.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "room_images")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class RoomImage {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "room_id", nullable = false)
+    private Room room;
+
+    @Column(nullable = false)
+    private String url;
+
+    private Boolean isPrimary = false;
+
+    private Integer sortOrder = 0;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+}
