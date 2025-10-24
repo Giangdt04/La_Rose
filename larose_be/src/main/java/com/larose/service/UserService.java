@@ -1,8 +1,11 @@
 package com.larose.service;
 
+import com.larose.constant.RoleName;
 import com.larose.dto.*;
+import com.larose.entity.Role;
 import com.larose.entity.User;
 import com.larose.entity.enums.OAuthProvider;
+import com.larose.repository.RoleRepository;
 import com.larose.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,9 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +24,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final RoleRepository roleRepository;
 
     @Value("${app.backend.base-url}")
     private String baseUrl;
@@ -43,6 +45,7 @@ public class UserService {
                 .emailVerified(false)
                 .isActive(true)
                 .oauthProvider(OAuthProvider.none)
+                .roles(this.getRolesFromRequest(req.getRoles()))
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -51,6 +54,27 @@ public class UserService {
         sendVerificationEmail(savedUser, token);
 
         return savedUser;
+    }
+
+    private Set<Role> getRolesFromRequest(Set<String> roleNames) {
+        Set<Role> roles = new HashSet<>();
+
+        // Nếu roleCodes null hoặc rỗng, gán role mặc định là "USER"
+        if (roleNames == null || roleNames.isEmpty()) {
+            Optional<Role> userRoleOptional = roleRepository.findByName(RoleName.USER.name());
+            if (userRoleOptional.isEmpty()) {
+                throw new IllegalArgumentException("Role not found"); // Nếu không tìm thấy role "USER"
+            }
+            roles.add(userRoleOptional.get());
+        } else {
+            List<Role> allRoles = roleRepository.findAllByNameIn(roleNames);
+            if (allRoles.size() != roleNames.size()) {
+                throw new IllegalArgumentException("Một hoặc nhiều role không tồn tại");
+            }
+            return new HashSet<>(allRoles);
+
+        }
+        return roles;
     }
 
     public boolean verifyEmailToken(String token) {

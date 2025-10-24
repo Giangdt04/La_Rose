@@ -72,8 +72,8 @@ public class AuthController {
             }
 
             // Generate tokens
-            String accessToken = jwtTokenUtil.generateAccessToken(req.getEmail());
-            String refreshToken = jwtTokenUtil.generateRefreshToken(req.getEmail());
+            String accessToken = jwtTokenUtil.generateAccessToken(user);
+            String refreshToken = jwtTokenUtil.generateRefreshToken(user);
 
             // Update last login
             userService.updateLastLogin(user.getId());
@@ -153,8 +153,8 @@ public class AuthController {
                 );
             }
 
-            String newAccessToken = jwtTokenUtil.generateAccessToken(email);
-            String newRefreshToken = jwtTokenUtil.generateRefreshToken(email);
+            String newAccessToken = jwtTokenUtil.generateAccessToken(user);
+            String newRefreshToken = jwtTokenUtil.generateRefreshToken(user);
 
             UserInfoResponse userInfo = new UserInfoResponse(
                     user.getId(),

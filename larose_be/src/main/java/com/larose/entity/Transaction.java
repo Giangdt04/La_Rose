@@ -44,11 +44,11 @@ public class Transaction {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private Status status = Status.INITIATED;
+    private Status status = Status.initiated;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    private Type type = Type.PAYMENT;
+    private Type type = Type.payment;
 
     @Column(name = "metadata", columnDefinition = "JSON")
     private String metadata;
@@ -62,15 +62,15 @@ public class Transaction {
     private LocalDateTime updatedAt;
 
     public enum Status {
-        INITIATED,
-        SUCCESS,
-        FAILED,
+        initiated,
+        success,
+        failed,
         REFUNDED
     }
 
     public enum Type {
-        PAYMENT,
-        REFUND,
-        PAYOUT
+        payment,
+        refund,
+        payout
     }
 }

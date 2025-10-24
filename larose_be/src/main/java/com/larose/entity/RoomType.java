@@ -16,11 +16,12 @@ public class RoomType {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Short id;
+    private Long id;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
+    @Column(name = "short_description")
     private String shortDescription;
 
     private Integer maxGuests;

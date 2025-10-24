@@ -1,15 +1,18 @@
 package com.larose.config;
 
+import com.larose.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.StringJoiner;
 
 /**
  * JWT Utility Class — Quản lý việc tạo và xác thực Access/Refresh Token.
@@ -50,36 +53,47 @@ public class JwtTokenUtil {
     /**
      * Tạo Access Token chứa email (subject).
      */
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(User user) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(user.getEmail())
+                .claim("scope", buildScope(user))
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
     }
 
+    private String buildScope(User user) {
+        StringJoiner stringJoiner = new StringJoiner(" ");
+
+        if (!CollectionUtils.isEmpty(user.getRoles())) {
+            user.getRoles().forEach(role -> stringJoiner.add("ROLE_" + role.getName()));
+        }
+        return stringJoiner.toString();
+    }
+
     /**
      * Giữ lại tên phương thức cũ để tránh lỗi khi gọi legacy code.
      */
-    public String generateToken(String subject) {
-        return generateAccessToken(subject);
+    public String generateToken(User user) {
+        return generateAccessToken(user);
     }
 
     /**
      * Tạo Refresh Token.
      */
-    public String generateRefreshToken(String email) {
+    public String generateRefreshToken(User user) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
 
         Map<String, Object> claims = new HashMap<>();
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(email)
+                .setSubject(user.getEmail())
+                .claim("scope", buildScope(user))
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -106,15 +120,15 @@ public class JwtTokenUtil {
             parseToken(token);
             return true;
         } catch (MalformedJwtException ex) {
-            System.err.println("⚠️ Token không hợp lệ: " + ex.getMessage());
+            System.err.println(" Token không hợp lệ: " + ex.getMessage());
         } catch (ExpiredJwtException ex) {
-            System.err.println("⚠️ Token đã hết hạn: " + ex.getMessage());
+            System.err.println(" Token đã hết hạn: " + ex.getMessage());
         } catch (UnsupportedJwtException ex) {
-            System.err.println("⚠️ Token không được hỗ trợ: " + ex.getMessage());
+            System.err.println(" Token không được hỗ trợ: " + ex.getMessage());
         } catch (IllegalArgumentException ex) {
-            System.err.println("⚠️ Token rỗng hoặc không đúng định dạng: " + ex.getMessage());
+            System.err.println(" Token rỗng hoặc không đúng định dạng: " + ex.getMessage());
         } catch (JwtException ex) {
-            System.err.println("⚠️ Lỗi JWT khác: " + ex.getMessage());
+            System.err.println(" Lỗi JWT khác: " + ex.getMessage());
         }
         return false;
     }
