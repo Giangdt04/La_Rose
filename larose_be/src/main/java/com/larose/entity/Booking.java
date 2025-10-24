@@ -58,7 +58,7 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private Status status = Status.PENDING;
+    private Status status = Status.pending;
 
     @Column(name = "cancel_reason", columnDefinition = "TEXT")
     private String cancelReason;
@@ -81,6 +81,6 @@ public class Booking {
     private List<BookingEvent> events;
 
     public enum Status {
-        PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW
+        pending, confirmed, check_in, check_out, cancelled, no_show
     }
 }
