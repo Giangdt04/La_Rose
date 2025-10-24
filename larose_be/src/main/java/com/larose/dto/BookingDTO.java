@@ -27,7 +27,7 @@ public class BookingDTO {
     private String roomTitle;
 
     // Thông tin loại phòng
-    private Short roomTypeId;
+    private Long roomTypeId;
     private String roomTypeName;
 
     // Thông tin user (nếu cần)

@@ -36,7 +36,7 @@ public class Review {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    private ReviewStatus status = ReviewStatus.PENDING;
+    private ReviewStatus status = ReviewStatus.pending;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -47,6 +47,6 @@ public class Review {
     private LocalDateTime updatedAt;
 
     public enum ReviewStatus {
-        PUBLISHED, PENDING, HIDDEN
+        published, pending, hidden
     }
 }
