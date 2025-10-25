@@ -1,9 +1,11 @@
 package com.larose.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReviewDTO {
     private Long id;
     private Byte rating;

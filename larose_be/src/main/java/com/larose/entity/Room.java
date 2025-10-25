@@ -1,10 +1,15 @@
 package com.larose.entity;
 
 import com.larose.entity.enums.RoomStatus;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "rooms")
@@ -25,6 +30,10 @@ public class Room {
     @JoinColumn(name = "room_type_id", nullable = false)
     private RoomType roomType;  // RoomType giờ có id là Short
 
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    private List<RoomImage> images;
+
     @Column(name = "title", length = 255)
     private String title;
 
@@ -39,10 +48,11 @@ public class Room {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private RoomStatus status = RoomStatus.AVAILABLE;
+    private RoomStatus status = RoomStatus.available;
 
+    @Type(JsonType.class)
     @Column(name = "amenities", columnDefinition = "JSON")
-    private String amenities;
+    private Map<String,Object> amenities;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
