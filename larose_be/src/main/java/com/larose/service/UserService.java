@@ -28,10 +28,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final RoleRepository roleRepository;
-
     private final RoleMapper roleMapper;
 
-    @Value("${app.backend.base-url}")
+
+    @Value("${app.frontend.base-url}")
     private String baseUrl;
 
     public User registerNewUser(SignupRequest req) {
@@ -433,6 +433,7 @@ public class UserService {
                 .phone(request.getPhone())
                 .isActive(true)
                 .emailVerified(false)
+                .roles(this.getRolesFromRequest(request.getRoles()))
                 .oauthProvider(OAuthProvider.none)
                 .build();
 

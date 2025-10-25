@@ -2,7 +2,6 @@ package com.larose.controller.room;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.larose.dto.request.RoomImageRequest;
 import com.larose.dto.request.RoomRequest;
 import com.larose.dto.response.RoomResponse;
 import com.larose.dto.response.RoomTypeResponse;
@@ -25,11 +24,28 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class RoomController {
+
     private final RoomService roomService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping
-    public ResponseEntity<Page<RoomResponse>> getAll(@RequestBody RoomSearchDto request){
-        Page<RoomResponse> rooms = roomService.getRooms(request);
+    public ResponseEntity<Page<RoomResponse>> getAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Long typeId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        RoomSearchDto searchDto = new RoomSearchDto();
+        searchDto.setKeyword(keyword);
+        searchDto.setMinPrice(minPrice);
+        searchDto.setMaxPrice(maxPrice);
+        searchDto.setTypeId(typeId);
+        searchDto.setPageIndex(page);
+        searchDto.setPageSize(size);
+
+        Page<RoomResponse> rooms = roomService.getRooms(searchDto);
         return ResponseEntity.ok(rooms);
     }
 
@@ -39,42 +55,43 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
+    // ✅ GET /api/rooms/types
     @GetMapping("/types")
-    public ResponseEntity<List<RoomTypeResponse>> getAllRoomsType(){
-        List<RoomTypeResponse> rooms = roomService.getRoomType();
-        return ResponseEntity.ok(rooms);
+    public ResponseEntity<List<RoomTypeResponse>> getAllRoomTypes() {
+        return ResponseEntity.ok(roomService.getRoomType());
     }
 
-
-
+    // ✅ POST /api/rooms  → tạo mới
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<RoomResponse> create(
             @RequestParam("roomRequest") String roomRequestJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) throws JsonProcessingException {
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) throws JsonProcessingException {
 
-        RoomRequest roomRequest = new ObjectMapper().readValue(roomRequestJson, RoomRequest.class);
-        RoomResponse save = roomService.create(roomRequest, images);
-        return ResponseEntity.ok(save);
+        RoomRequest roomRequest = objectMapper.readValue(roomRequestJson, RoomRequest.class);
+        RoomResponse savedRoom = roomService.create(roomRequest, images);
+        return ResponseEntity.status(201).body(savedRoom);
     }
 
-    @PutMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    // ✅ PUT /api/rooms/{code}  → cập nhật
+    @PutMapping(value = "/{code}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RoomResponse> update(
+            @PathVariable String code,
             @RequestParam("roomRequest") String roomRequestJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) throws JsonProcessingException {
-
-        RoomRequest roomRequest = new ObjectMapper().readValue(roomRequestJson, RoomRequest.class);
-        RoomResponse save = roomService.update(roomRequest, images);
-        return ResponseEntity.ok(save);
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) throws JsonProcessingException {
+        System.out.println(roomRequestJson);
+        RoomRequest roomRequest = objectMapper.readValue(roomRequestJson, RoomRequest.class);
+        roomRequest.setCode(code); // đảm bảo code khớp
+        RoomResponse updated = roomService.update(roomRequest, images);
+        return ResponseEntity.ok(updated);
     }
 
-    @DeleteMapping
-    public ResponseEntity<String> delete(@RequestParam("code") String code) {
+    // ✅ DELETE /api/rooms/{code}
+    @DeleteMapping("/{code}")
+    public ResponseEntity<Void> delete(@PathVariable String code) {
         roomService.delete(code);
-        return ResponseEntity.ok("Xóa thành công");
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
-
-
-
-
 }
