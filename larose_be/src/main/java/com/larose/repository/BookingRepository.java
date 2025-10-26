@@ -68,5 +68,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """, nativeQuery = true)
     BigDecimal sumTotalPrice(@Param("days") Integer days);
 
+
     Optional<Booking> findByRoomId(Long roomId);
+
 }
