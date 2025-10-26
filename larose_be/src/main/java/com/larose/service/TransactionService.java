@@ -29,8 +29,8 @@ public class TransactionService {
         transaction.setUser(getBookingByCode.getUser());
         transaction.setBooking(getBookingByCode);
         if(request.getType().equals(StatusConstant.TransactionType.PAYMENT)){
-            transaction.setType(Transaction.Type.PAYMENT);
-            transaction.setStatus(Transaction.Status.SUCCESS);
+            transaction.setType(Transaction.Type.payment);
+            transaction.setStatus(Transaction.Status.success);
         }
 
         TransactionResponse response = transactionMapper.toResponse(transactionRepository.save(transaction));

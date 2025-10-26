@@ -1,11 +1,10 @@
 package com.larose.service;
 
-import com.larose.dto.request.RoomImageRequest;
+import com.larose.dto.projection.RoomsProjection;
 import com.larose.dto.request.RoomRequest;
 import com.larose.dto.response.RoomImageResponse;
 import com.larose.dto.response.RoomResponse;
 import com.larose.dto.response.RoomTypeResponse;
-import com.larose.dto.projection.RoomsProjection;
 import com.larose.dto.search.RoomSearchDto;
 import com.larose.entity.Room;
 import com.larose.entity.RoomImage;
@@ -28,13 +27,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,6 +57,12 @@ public class RoomService {
         return mapProjectionToRoomResponse(roomPage, pageable);
     }
 
+    public RoomResponse findById(Long id){
+        Room room = roomRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Not found room with id: " + id));
+        return roomMapper.toResponse(room);
+    }
+
     public List<RoomTypeResponse> getRoomType() {
         List<RoomType> getAll = roomTypeRepository.findAll();
         return getAll.stream()
@@ -70,6 +73,7 @@ public class RoomService {
     public Room getRoom(String code) {
         return roomRepository.findByCode(code)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found with code: " + code));
+
     }
 
     @Transactional

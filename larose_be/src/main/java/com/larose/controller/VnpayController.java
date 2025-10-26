@@ -8,8 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/vnpay")
@@ -28,15 +26,14 @@ public class VnpayController {
         return ResponseEntity.ok(paymentUrl);
     }
 
-    @GetMapping("/vnpay-payment")
-    public ResponseEntity<Map<String, Object>> handlePaymentResponse(HttpServletRequest request) {
-        int paymentStatus = vnpayService.orderReturn(request);
-        Map<String, Object> response = new HashMap<>();
-        response.put("paymentStatus", paymentStatus == 1 ? "success" : "fail");
-        response.put("orderId", request.getParameter("vnp_OrderInfo"));
-        response.put("totalPrice", request.getParameter("vnp_Amount"));
-        response.put("paymentTime", request.getParameter("vnp_PayDate"));
-        response.put("transactionId", request.getParameter("vnp_TransactionNo"));
-        return ResponseEntity.ok(response);
+    @GetMapping("/vnpay_return")
+    public ResponseEntity<String> vnpayReturn(HttpServletRequest request) {
+        String email = vnpayService.orderReturn(request);
+        if (email != null) {
+            return ResponseEntity.ok("Thanh toán thành công! Hóa đơn đã được gửi tới " + email);
+        } else {
+            return ResponseEntity.badRequest().body("Thanh toán thất bại hoặc sai chữ ký.");
+        }
     }
+
 }

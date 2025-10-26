@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.Set;
+
 @Data
 public class SignupRequest {
     @Email @NotBlank
@@ -12,4 +14,6 @@ public class SignupRequest {
     private String password;
     private String fullName;
     private String phone;
+
+    private Set<String> roles;
 }

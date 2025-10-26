@@ -67,14 +67,14 @@ public class SecurityConfig {
                                 "/api/admin/bookings/**",
                                 "/api/admin/reviews/responses/**",
                                 "/api/admin/conversations/**"
-                        ).hasAnyRole("STAFF", "MANAGER", "ADMIN")
+                        ).hasRole( "ADMIN")
                         .requestMatchers(
                                 "/api/manager/**",
                                 "/api/admin/rooms/**",
                                 "/api/admin/room-types/**",
                                 "/api/admin/notifications/**",
                                 "/api/admin/reports/**"
-                        ).hasAnyRole("MANAGER", "ADMIN")
+                        ).hasRole( "ADMIN")
                         .requestMatchers(
                                 "/api/admin/**",
                                 "/api/admin/users/**",

@@ -67,4 +67,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                    AND (:days IS NULL OR b.created_at >= DATE_SUB(NOW(), INTERVAL :days DAY))
             """, nativeQuery = true)
     BigDecimal sumTotalPrice(@Param("days") Integer days);
+
+
+    Optional<Booking> findByRoomId(Long roomId);
+
 }

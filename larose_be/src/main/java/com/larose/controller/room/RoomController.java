@@ -8,6 +8,7 @@ import com.larose.dto.response.RoomResponse;
 import com.larose.dto.response.RoomTypeResponse;
 import com.larose.dto.search.RoomSearchDto;
 import com.larose.service.RoomService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -27,6 +28,12 @@ public class RoomController {
     @GetMapping
     public ResponseEntity<Page<RoomResponse>> getAll(@RequestBody RoomSearchDto request){
         Page<RoomResponse> rooms = roomService.getRooms(request);
+        return ResponseEntity.ok(rooms);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RoomResponse> getDetail(@NonNull @PathVariable Long id){
+        RoomResponse rooms = roomService.findById(id);
         return ResponseEntity.ok(rooms);
     }
 

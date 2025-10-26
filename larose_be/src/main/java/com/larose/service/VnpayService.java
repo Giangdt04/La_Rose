@@ -2,7 +2,6 @@ package com.larose.service;
 
 
 import com.larose.config.VnpayConfig;
-import com.larose.repository.BookingRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,7 @@ import java.util.*;
 public class VnpayService {
     private final VnpayConfig vnpayConfig;
 
-    private final BookingRepository bookingRepository;
+    private final InvoiceService invoiceService;
 
     public String createOrder(BigDecimal total, String orderInfo, String roomId) {
 
@@ -94,11 +93,10 @@ public class VnpayService {
         return paymentUrl;
     }
 
-    public int orderReturn(HttpServletRequest request) {
+    public String orderReturn(HttpServletRequest request) {
         Map<String, String> fields = new HashMap<>();
 
-        // Lấy toàn bộ parameter từ VNPay gửi về
-        for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {
+        for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements(); ) {
             String fieldName = params.nextElement();
             String fieldValue = request.getParameter(fieldName);
             if (fieldValue != null && fieldValue.length() > 0) {
@@ -106,31 +104,29 @@ public class VnpayService {
             }
         }
 
-        // Lấy SecureHash do VNPay gửi về
         String vnp_SecureHash = request.getParameter("vnp_SecureHash");
-
-        // Xóa các trường không tham gia ký
         fields.remove("vnp_SecureHashType");
         fields.remove("vnp_SecureHash");
 
-        // Tạo chữ ký local từ dữ liệu nhận được
         String signValue = vnpayConfig.hashAllFields(fields);
 
-        log.info(" VNPAY RETURN DATA: {}", fields);
-        log.info(" Local Sign: {}", signValue);
-        log.info(" Remote Sign: {}", vnp_SecureHash);
-
-
-        // So sánh checksum
         if (signValue.equals(vnp_SecureHash)) {
-            // Giao dịch thành công
             if ("00".equals(request.getParameter("vnp_TransactionStatus"))) {
-                return 1; // Success
-            } else {
-                return 0; // Transaction failed
+                try {
+                    Long roomId = Long.valueOf(request.getParameter("vnp_TxnRef"));
+
+                    String email = invoiceService.sendInvoice(roomId);
+
+                    log.info("Invoice sent successfully to email={} for roomId={}", email, roomId);
+                    return email;
+                } catch (Exception e) {
+                    log.error("Error while sending invoice after payment success: ", e);
+                    return null;
+                }
             }
-        } else {
-            return -1; // Sai chữ ký
         }
+
+        return null;
     }
 }
+
