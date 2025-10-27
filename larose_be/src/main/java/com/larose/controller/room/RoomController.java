@@ -2,6 +2,7 @@ package com.larose.controller.room;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.larose.dto.request.RoomImageRequest;
 import com.larose.dto.request.RoomRequest;
 import com.larose.dto.response.RoomResponse;
 import com.larose.dto.response.RoomTypeResponse;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +44,7 @@ public class RoomController {
         List<RoomTypeResponse> rooms = roomService.getRoomType();
         return ResponseEntity.ok(rooms);
     }
+
 
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

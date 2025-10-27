@@ -6,6 +6,7 @@ import com.larose.entity.Role;
 import com.larose.entity.User;
 import com.larose.entity.enums.OAuthProvider;
 import com.larose.maptruct.RoleMapper;
+
 import com.larose.repository.RoleRepository;
 import com.larose.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final RoleRepository roleRepository;
+
     private final RoleMapper roleMapper;
 
     @Value("${app.backend.base-url}")
