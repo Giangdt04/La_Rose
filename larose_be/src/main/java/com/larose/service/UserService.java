@@ -5,6 +5,8 @@ import com.larose.dto.*;
 import com.larose.entity.Role;
 import com.larose.entity.User;
 import com.larose.entity.enums.OAuthProvider;
+import com.larose.maptruct.RoleMapper;
+
 import com.larose.repository.RoleRepository;
 import com.larose.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,6 +28,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final RoleRepository roleRepository;
+
+    private final RoleMapper roleMapper;
 
     @Value("${app.backend.base-url}")
     private String baseUrl;
@@ -153,6 +158,15 @@ public class UserService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
         });
+    }
+
+    public Set<RoleDTO> mapRolesToDTO(Set<Role> roles) {
+        if(CollectionUtils.isEmpty(roles)){
+            throw new IllegalArgumentException("Role has been noll");
+        }
+        return roles.stream()
+                .map(roleMapper::toDto)
+                .collect(Collectors.toSet());
     }
 
     public boolean deactivateUser(Long userId) {

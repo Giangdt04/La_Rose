@@ -3,6 +3,7 @@ package com.larose.controller;
 import com.larose.config.JwtTokenUtil;
 import com.larose.dto.*;
 import com.larose.entity.User;
+import com.larose.maptruct.RoleMapper;
 import com.larose.service.EmailService;
 import com.larose.service.UserService;
 import jakarta.validation.Valid;
@@ -16,6 +17,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -25,6 +28,7 @@ public class AuthController {
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenUtil jwtTokenUtil;
+
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
@@ -88,7 +92,8 @@ public class AuthController {
                     user.getIsActive(),
                     user.getEmailVerified(),
                     user.getLastLogin(),
-                    user.getCreatedAt()
+                    user.getCreatedAt(),
+                    userService.mapRolesToDTO(user.getRoles())
             );
 
             return ResponseEntity.ok(new AuthDetailResponse(
@@ -164,7 +169,8 @@ public class AuthController {
                     user.getIsActive(),
                     user.getEmailVerified(),
                     user.getLastLogin(),
-                    user.getCreatedAt()
+                    user.getCreatedAt(),
+                    userService.mapRolesToDTO(user.getRoles())
             );
 
             logger.info("Token refreshed successfully for user: {}", email);

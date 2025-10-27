@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,7 +45,10 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
+
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<RoomResponse> create(
             @RequestParam("roomRequest") String roomRequestJson,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) throws JsonProcessingException {
