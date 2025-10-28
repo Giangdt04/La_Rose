@@ -14,4 +14,6 @@ public class RoomImageResponse {
     private Boolean isPrimary;
     private String url;
     private Integer sortOrder;
+
+    private Long roomId;
 }
