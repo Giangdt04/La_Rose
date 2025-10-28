@@ -28,8 +28,23 @@ public class RoomController {
     private final RoomService roomService;
 
     @GetMapping
-    public ResponseEntity<Page<RoomResponse>> getAll(@RequestBody RoomSearchDto request){
-        Page<RoomResponse> rooms = roomService.getRooms(request);
+    public ResponseEntity<Page<RoomResponse>> getAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Long typeId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        RoomSearchDto searchDto = new RoomSearchDto();
+        searchDto.setKeyword(keyword);
+        searchDto.setMinPrice(minPrice);
+        searchDto.setMaxPrice(maxPrice);
+        searchDto.setTypeId(typeId);
+        searchDto.setPageIndex(page);
+        searchDto.setPageSize(size);
+
+        Page<RoomResponse> rooms = roomService.getRooms(searchDto);
         return ResponseEntity.ok(rooms);
     }
 

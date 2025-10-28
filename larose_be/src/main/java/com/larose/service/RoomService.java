@@ -54,7 +54,27 @@ public class RoomService {
 
         Page<RoomsProjection> roomPage = roomRepository.getRooms(request, pageable);
 
-        return mapProjectionToRoomResponse(roomPage, pageable);
+        List<Long> roomIds = roomPage.stream()
+                .map(RoomsProjection::getRoomId)
+                .toList();
+
+        List<RoomImage> images = roomImageRepository.findAllByRoomIdIn(roomIds);
+
+        Map<Long, List<RoomImageResponse>> imagesMap = images.stream()
+                .map(img -> RoomImageResponse.builder()
+                        .id(img.getId())
+                        .url(img.getUrl())
+                        .isPrimary(img.getIsPrimary())
+                        .roomId(img.getRoom().getId())
+                        .build())
+                .collect(Collectors.groupingBy(RoomImageResponse::getRoomId));
+
+
+        List<RoomResponse> responses = roomPage.stream()
+                .map(r -> RoomResponse.fromProjection(r, imagesMap.getOrDefault(r.getRoomId(), new ArrayList<>())))
+                .toList();
+
+        return new PageImpl<>(responses, pageable, roomPage.getTotalElements());
     }
 
     public RoomResponse findById(Long id){
@@ -162,43 +182,5 @@ public class RoomService {
         response.setMaxGuests(roomType.getMaxGuests());
         response.setBasePrice(roomType.getBasePrice());
         return response;
-    }
-
-    private Page<RoomResponse> mapProjectionToRoomResponse(Page<RoomsProjection> roomPage, Pageable pageable) {
-        Map<Long, RoomResponse> roomMap = new LinkedHashMap<>();
-
-        for (RoomsProjection r : roomPage.getContent()) {
-            RoomResponse room = roomMap.computeIfAbsent(r.getRoomId(), id -> RoomResponse.builder()
-                    .id(r.getRoomId())
-                    .code(r.getRoomCode())
-                    .title(r.getRoomTitle())
-                    .price(r.getRoomPrice())
-                    .status(r.getRoomStatus())
-                    .description(r.getRoomDescription())
-                    .createdAt(r.getRoomCreatedAt())
-                    .updatedAt(r.getRoomUpdatedAt())
-                    .deletedAt(r.getRoomDeletedAt())
-                    .type(RoomTypeResponse.builder()
-                            .id(r.getTypeId())
-                            .name(r.getTypeName())
-                            .basePrice(r.getBasePrice())
-                            .shortDescription(r.getTypeShortDescription())
-                            .build())
-                    .images(new ArrayList<>())
-                    .build()
-            );
-
-            if (r.getImageId() != null) {
-                room.getImages().add(RoomImageResponse.builder()
-                        .id(r.getImageId())
-                        .url(r.getImageUrl())
-                        .isPrimary(r.getImageIsPrimary())
-                        .url(r.getImageUrl())
-                        .build());
-            }
-        }
-
-        List<RoomResponse> responses = new ArrayList<>(roomMap.values());
-        return new PageImpl<>(responses, pageable, roomPage.getTotalElements());
     }
 }

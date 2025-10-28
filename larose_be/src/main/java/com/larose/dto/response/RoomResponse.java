@@ -1,5 +1,6 @@
 package com.larose.dto.response;
 
+import com.larose.dto.projection.RoomsProjection;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -25,4 +26,26 @@ public class RoomResponse {
 
     private RoomTypeResponse type;
     private List<RoomImageResponse> images = new ArrayList<>();
+
+    public static RoomResponse fromProjection(RoomsProjection r, List<RoomImageResponse> images) {
+        return RoomResponse.builder()
+                .id(r.getRoomId())
+                .code(r.getRoomCode())
+                .title(r.getRoomTitle())
+                .price(r.getRoomPrice())
+                .status(r.getRoomStatus())
+                .description(r.getRoomDescription())
+                .createdAt(r.getRoomCreatedAt())
+                .updatedAt(r.getRoomUpdatedAt())
+                .deletedAt(r.getRoomDeletedAt())
+                .type(RoomTypeResponse.builder()
+                        .id(r.getTypeId())
+                        .name(r.getTypeName())
+                        .basePrice(r.getBasePrice())
+                        .shortDescription(r.getTypeShortDescription())
+                        .build())
+                .images(images != null ? images : new ArrayList<>())
+                .build();
+    }
+
 }

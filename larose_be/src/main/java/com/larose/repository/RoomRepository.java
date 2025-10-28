@@ -29,14 +29,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
                 t.id as type_id,
                 t.name as type_name,
                 t.short_description as type_short_description,
-                t.base_price as basePrice,
-            
-                i.id as image_id,
-                i.is_primary as image_is_primary,
-                i.url as image_url
+                t.base_price as basePrice
             from rooms r
             left join room_types t on r.room_type_id = t.id
-            left join room_images i on r.id = i.room_id
             where (:#{#request.minPrice} is null or r.price >= :#{#request.minPrice})
               and (:#{#request.maxPrice} is null or r.price <= :#{#request.maxPrice})
               and (:#{#request.typeId} is null or t.id = :#{#request.typeId})
