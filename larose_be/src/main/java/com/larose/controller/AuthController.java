@@ -75,6 +75,18 @@ public class AuthController {
                 );
             }
 
+            // ⚠️ Kiểm tra email đã được xác thực chưa
+            if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+                return ResponseEntity.status(403).body(
+                        new ErrorResponse(
+                                403,
+                                "EMAIL_NOT_VERIFIED",
+                                "Email của bạn chưa được xác thực. Vui lòng kiểm tra hộp thư để xác minh tài khoản.",
+                                LocalDateTime.now()
+                        )
+                );
+            }
+
             // Generate tokens
             String accessToken = jwtTokenUtil.generateAccessToken(user);
             String refreshToken = jwtTokenUtil.generateRefreshToken(user);

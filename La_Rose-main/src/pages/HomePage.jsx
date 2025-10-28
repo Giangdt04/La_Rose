@@ -28,7 +28,7 @@ const HomePage = () => {
             Trải nghiệm nghỉ dưỡng sang trọng với phong cách nữ tính tinh tế
           </p>
           <button 
-            onClick={() => navigate('/booking')} 
+            onClick={() => navigate('/rooms')} 
             className="bg-gradient-to-r from-pink-400 to-rose-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
           >
             Đặt phòng ngay

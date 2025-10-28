@@ -7,7 +7,7 @@ const MainLayout = () => {
   return (
     <div className="font-poppins bg-rose-gradient min-h-screen flex flex-col">
       <Header />
-      <main className="pt-20 flex-grow">
+      <main className="flex-grow">
         <Outlet />
       </main>
       <Footer />
