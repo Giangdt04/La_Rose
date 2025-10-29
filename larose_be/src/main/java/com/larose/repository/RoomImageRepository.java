@@ -11,4 +11,7 @@ public interface RoomImageRepository extends JpaRepository<RoomImage, Long> {
     List<RoomImage> findByRoomId(Long roomId);
 
     List<RoomImage> findAllByRoomIdIn(List<Long> roomIds);
+
+    List<RoomImage> findAllByIdIn(List<Long> Ids);
+
 }

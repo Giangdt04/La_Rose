@@ -34,7 +34,7 @@ public class RoomController {
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Long typeId,
-            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         RoomSearchDto searchDto = new RoomSearchDto();
@@ -79,7 +79,7 @@ public class RoomController {
     public ResponseEntity<RoomResponse> update(
             @PathVariable String code,
             @RequestParam("roomRequest") String roomRequestJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images
+            @RequestParam(value = "images", required = false) List<MultipartFile> images
     ) throws JsonProcessingException {
         System.out.println(roomRequestJson);
         RoomRequest roomRequest = objectMapper.readValue(roomRequestJson, RoomRequest.class);

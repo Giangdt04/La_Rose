@@ -25,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -50,7 +51,7 @@ public class RoomService {
 
     public Page<RoomResponse> getRooms(@NonNull RoomSearchDto request) {
 
-        Pageable pageable = PageRequest.of(request.getPageIndex() - 1, request.getPageSize());
+        Pageable pageable = PageRequest.of(request.getPageIndex() , request.getPageSize());
 
         Page<RoomsProjection> roomPage = roomRepository.getRooms(request, pageable);
 
@@ -130,7 +131,15 @@ public class RoomService {
         RoomType roomType = roomTypeRepository.findById(request.getRoomTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Room type not found with id: " + request.getRoomTypeId()));
         room.setRoomType(roomType);
-
+        if(!CollectionUtils.isEmpty(request.getDeleteImages())){
+            List<RoomImage> deleteList = roomImageRepository.findAllByIdIn(request.getDeleteImages());
+            for(RoomImage deletes : deleteList){
+                room.getImages().remove(deletes);
+                if(deletes.getIsPrimary() && room.getImages().size() > 0){
+                    room.getImages().get(0).setIsPrimary(true);
+                }
+            }
+        }
         room = roomRepository.save(room);
 
         uploadImagesAsync(room, images, request.getDeleteImages());
@@ -148,11 +157,9 @@ public class RoomService {
 
     @Async
     public void uploadImagesAsync(Room room, List<MultipartFile> newImages, List<Long> deleteImageIds){
-        if(deleteImageIds != null && !deleteImageIds.isEmpty()){
-            roomImageRepository.deleteAllById(deleteImageIds);
-        }
 
-        if(newImages == null || newImages.isEmpty()) return;
+
+        if(CollectionUtils.isEmpty(newImages)) return;
 
         List<RoomImage> existingImages = roomImageRepository.findByRoomId(room.getId());
         boolean hasPrimary = existingImages.stream().anyMatch(RoomImage::getIsPrimary);

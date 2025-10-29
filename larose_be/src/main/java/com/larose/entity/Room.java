@@ -8,6 +8,7 @@ import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,9 +31,9 @@ public class Room {
     @JoinColumn(name = "room_type_id", nullable = false)
     private RoomType roomType;  // RoomType giờ có id là Short
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
-    private List<RoomImage> images;
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<RoomImage> images = new ArrayList<>();
+
 
     @Column(name = "title", length = 255)
     private String title;

@@ -1,7 +1,7 @@
 package com.larose.dto.search;
 
 public abstract class SearchDto {
-    private int pageIndex = 1;
+    private int pageIndex = 0;
     private int pageSize = 10;
 
     public void setPageIndex(Integer pageIndex) {
