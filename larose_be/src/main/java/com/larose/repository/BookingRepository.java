@@ -27,13 +27,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"room", "roomType", "user"})
-    @Query("SELECT b FROM Booking b WHERE b.user.id = :userId AND b.status = :status ORDER BY b.createdAt DESC")
+    @Query("SELECT b FROM Booking b WHERE b.user.id = :userId AND (:#{#status}) IS NULL OR b.status = (:#{#status}) ORDER BY b.createdAt DESC")
     Page<Booking> findByUserIdAndStatusOrderByCreatedAtDesc(@Param("userId") Long userId,
                                                             @Param("status") Booking.Status status,
                                                             Pageable pageable);
 
     @EntityGraph(attributePaths = {"room", "roomType", "user"})
     List<Booking> findByUserIdAndRoomIdOrderByCreatedAtDesc(Long userId, Long roomId);
+
+    @EntityGraph(attributePaths = {"room", "roomType", "user"})
+    Page<Booking> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"room", "roomType", "user"})
+    Page<Booking> findByStatusOrderByCreatedAtDesc(Booking.Status status, Pageable pageable);
 
     @Query(value = """
             select * from bookings order by bookings.id desc limit 1

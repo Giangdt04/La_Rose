@@ -24,14 +24,23 @@ const CustomerManagement = () => {
         phone: "",
     });
 
-    // Lấy danh sách customers
     const fetchCustomers = async () => {
         setLoading(true);
         setError(null);
         try {
-            const params = searchTerm ? { search: searchTerm } : {};
+            const params = {
+                page: 0,
+                size: 100,
+                sortBy: 'createdAt',
+                sortDirection: 'desc'
+            };
+            if (searchTerm) {
+                params.search = searchTerm;
+            }
             const response = await userService.getUsers(params);
-            setCustomers(response || []);
+            // Admin API trả về Page object với content array
+            const customerList = response.content || response || [];
+            setCustomers(customerList);
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -43,59 +52,42 @@ const CustomerManagement = () => {
         }
     };
 
-    // Xóa customer
     const deleteCustomer = async (customerId) => {
         try {
-            const response = await userService.deleteUser(customerId);
-            if (response.success) {
-                setCustomers((prev) =>
-                    prev.filter((customer) => customer.id !== customerId),
-                );
-                return response;
-            }
-            throw new Error(response.message || "Xóa thất bại");
+            await userService.deleteUser(customerId);
+            setCustomers((prev) =>
+                prev.filter((customer) => customer.id !== customerId),
+            );
         } catch (err) {
             throw err.response?.data || err;
         }
     };
 
-    // Cập nhật customer
     const updateCustomer = async (customerId, data) => {
         try {
             const response = await userService.updateUser(customerId, data);
-            if (response.success) {
-                // Cập nhật local state
-                setCustomers((prev) =>
-                    prev.map((customer) =>
-                        customer.id === customerId
-                            ? { ...customer, ...data }
-                            : customer,
-                    ),
-                );
-                return response;
-            }
-            throw new Error(response.message || "Cập nhật thất bại");
+            setCustomers((prev) =>
+                prev.map((customer) =>
+                    customer.id === customerId
+                        ? { ...customer, ...data }
+                        : customer,
+                ),
+            );
+            return response;
         } catch (err) {
             throw err.response?.data || err;
         }
     };
 
-    // Tạo customer mới (sử dụng API signup)
     const createCustomer = async (data) => {
         try {
-            const response = await userService.createUser(data);
-            if (response.success) {
-                // Thêm vào danh sách và refresh
-                fetchCustomers();
-                return response;
-            }
-            throw new Error(response.message || "Tạo thất bại");
+            await userService.createUser(data);
+            fetchCustomers();
         } catch (err) {
             throw err.response?.data || err;
         }
     };
 
-    // Lấy thống kê chi tiết cho customer
     const fetchCustomerStats = async (userId) => {
         try {
             setLoading(true);
@@ -228,7 +220,6 @@ const CustomerManagement = () => {
         }
     };
 
-    // Load data khi component mount
     useEffect(() => {
         fetchCustomers();
     }, []);
@@ -290,7 +281,6 @@ const CustomerManagement = () => {
                 </div>
             </div>
 
-            {/* Search Bar */}
             <div className="mb-6">
                 <form onSubmit={handleSearchSubmit} className="flex gap-2">
                     <input
@@ -442,7 +432,6 @@ const CustomerManagement = () => {
                 </table>
             </div>
 
-            {/* Modal chi tiết khách hàng */}
             {showDetailModal && selectedCustomer && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -458,7 +447,6 @@ const CustomerManagement = () => {
                             </button>
                         </div>
 
-                        {/* Thông tin cơ bản */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div className="space-y-4">
                                 <div>
@@ -546,7 +534,6 @@ const CustomerManagement = () => {
                             </div>
                         </div>
 
-                        {/* Thống kê */}
                         <div className="border-t pt-6">
                             <h4 className="font-semibold text-lg mb-4 text-gray-800">
                                 Thống kê
@@ -593,7 +580,6 @@ const CustomerManagement = () => {
                             </div>
                         </div>
 
-                        {/* Đặt phòng gần đây */}
                         {customerStats.recentBookings &&
                             customerStats.recentBookings.length > 0 && (
                                 <div className="border-t pt-6">
@@ -653,7 +639,6 @@ const CustomerManagement = () => {
                 </div>
             )}
 
-            {/* Modal chỉnh sửa khách hàng */}
             {showEditModal && selectedCustomer && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-md">
@@ -759,7 +744,6 @@ const CustomerManagement = () => {
                 </div>
             )}
 
-            {/* Modal tạo khách hàng mới */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-md">

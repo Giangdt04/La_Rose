@@ -81,6 +81,6 @@ public class Booking {
     private List<BookingEvent> events;
 
     public enum Status {
-        pending, confirmed, check_in, check_out, cancelled, no_show
+        pending, confirmed, checked_in, checked_out, cancelled, no_show
     }
 }

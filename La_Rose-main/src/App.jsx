@@ -14,7 +14,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import ProfilePage from "./pages/ProfilePage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import AdminLoginPage from "./admin/pages/AdminLoginPage";
-
+import HistoryBookingPage from "./pages/HistoryBookingPage";
 function App() {
     return (
         <Routes>
@@ -31,6 +31,7 @@ function App() {
 
                 <Route path="about" element={<AboutPage />} />
                 <Route path="profile" element={<ProfilePage />} />
+                <Route path="bookings" element={< HistoryBookingPage/>} />
                 <Route
                     path="/api/auth/verify"
                     element={<EmailVerificationPage />}
