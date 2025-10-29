@@ -34,7 +34,7 @@ public class JwtTokenUtil {
      */
     public JwtTokenUtil(
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.access-token-expiration-ms:900000}") long accessTokenExpirationMs,
+            @Value("${app.jwt.access-token-expiration-ms:604800000}") long accessTokenExpirationMs,
             @Value("${app.jwt.refresh-token-expiration-ms:604800000}") long refreshTokenExpirationMs
     ) {
         if (secret == null || secret.length() < 32) {

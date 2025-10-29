@@ -6,7 +6,6 @@ class UserService extends HttpService {
         super("http://localhost:8080/api");
     }
 
-    // Authentication - API THẬT
     async signup(userData) {
         return await this.post("/auth/signup", userData);
     }
@@ -15,10 +14,11 @@ class UserService extends HttpService {
         return await this.post("/auth/login", credentials);
     }
 
-    // User Management - API THẬT
-    async getUsers() {
+    async getUsers(params = {}) {
         try {
-            const response = await this.get("/users");
+            const queryString = new URLSearchParams(params).toString();
+            const url = queryString ? `/admin/users?${queryString}` : "/admin/users";
+            const response = await this.get(url);
             return response;
         } catch (error) {
             console.error("Error in getUsers:", error);
@@ -68,7 +68,7 @@ class UserService extends HttpService {
 
     async updateUser(userId, userData) {
         try {
-            const response = await this.put(`/users/${userId}`, userData);
+            const response = await this.put(`/admin/users/${userId}`, userData);
             return response;
         } catch (error) {
             console.error("Error in updateUser:", error);
@@ -116,7 +116,6 @@ class UserService extends HttpService {
         }
     }
 
-    // Profile Management - API THẬT
     async getCurrentUserProfile() {
         try {
             const response = await this.get("/users/profile");
@@ -150,7 +149,6 @@ class UserService extends HttpService {
         }
     }
 
-    // Email Verification - API THẬT
     async verifyEmail(token) {
         try {
             const response = await this.get(
@@ -163,7 +161,6 @@ class UserService extends HttpService {
         }
     }
 
-    // User Bookings & Reviews - API THẬT
     async getUserBookingsByStatus(status, page = 0, size = 10) {
         try {
             const response = await this.get(
@@ -191,25 +188,10 @@ class UserService extends HttpService {
         }
     }
 
-    // Statistics methods - Có thể cần thêm API riêng
     async getUserBookings(userId = null) {
         try {
-            // Nếu có userId, lấy thông qua admin API
-            // Nếu không, lấy của user hiện tại
-            if (userId) {
-                // Giả sử có endpoint admin để lấy booking của user cụ thể
-                const response = await this.get(
-                    `/admin/users/${userId}/bookings`,
-                );
-                return response.data || [];
-            } else {
-                const response = await this.getUserBookingsByStatus(
-                    "all",
-                    0,
-                    100,
-                );
-                return response.data || [];
-            }
+            console.warn("getUserBookings: API endpoint may not exist yet");
+            return [];
         } catch (error) {
             console.error("Error in getUserBookings:", error);
             return [];
@@ -218,9 +200,7 @@ class UserService extends HttpService {
 
     async getUserTransactions(userId = null) {
         try {
-            console.log(userId);
-            // Endpoint này có thể không có, tạm trả về rỗng
-            console.warn("API lấy transactions của user chưa có");
+            console.warn("getUserTransactions: API endpoint may not exist yet");
             return [];
         } catch (error) {
             console.error("Error in getUserTransactions:", error);
@@ -230,27 +210,14 @@ class UserService extends HttpService {
 
     async getUserReviews(userId = null) {
         try {
-            if (userId) {
-                // Giả sử có endpoint admin để lấy reviews của user cụ thể
-                const response = await this.get(
-                    `/admin/users/${userId}/reviews`,
-                );
-                return response.data || [];
-            } else {
-                const response = await this.getUserReviewsByStatus(
-                    "all",
-                    0,
-                    100,
-                );
-                return response.data || [];
-            }
+            console.warn("getUserReviews: API endpoint may not exist yet");
+            return [];
         } catch (error) {
             console.error("Error in getUserReviews:", error);
             return [];
         }
     }
 
-    // Các API khác từ collection Postman
     async createTransaction(transactionData) {
         return await this.post("/transaction", transactionData);
     }

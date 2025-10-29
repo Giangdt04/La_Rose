@@ -46,20 +46,18 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
-    public List<BookingDTO> getUserBookingsByStatus(String email, String status, int page, int size) {
+    public Page<BookingDTO> getUserBookingsByStatus(String email, String status, int page, int size) {
         var user = userService.findByEmailAndActive(email);
         if (user == null) {
             throw new IllegalArgumentException("User not found");
         }
 
         try {
-            Booking.Status bookingStatus = Booking.Status.valueOf(status.toUpperCase());
             Pageable pageable = PageRequest.of(page, size);
-            Page<Booking> bookings = bookingRepository.findByUserIdAndStatusOrderByCreatedAtDesc(user.getId(), bookingStatus, pageable);
+            Page<Booking> bookings = bookingRepository.findByUserIdAndStatusOrderByCreatedAtDesc(user.getId(),
+                    status == null ? null : Booking.Status.valueOf(status), pageable);
 
-            return bookings.stream()
-                    .map(this::convertToBookingDTO)
-                    .collect(Collectors.toList());
+            return bookings.map(this::convertToBookingDTO);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid status: " + status);
         }
@@ -164,13 +162,59 @@ public class BookingService {
         }
     }
 
+    public Page<BookingDTO> getAllBookingsForAdmin(String status, String search, Pageable pageable) {
+        Page<Booking> bookings;
+
+        if (status != null && !status.isEmpty() && !status.equalsIgnoreCase("all")) {
+            try {
+                bookings = bookingRepository.findByStatusOrderByCreatedAtDesc(Booking.Status.valueOf(status), pageable);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid status: " + status);
+            }
+        } else {
+            bookings = bookingRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
+
+        return bookings.map(this::convertToBookingDTO);
+    }
+
+    public BookingDTO getBookingById(Long id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + id));
+        return convertToBookingDTO(booking);
+    }
+
+    @Transactional
+    public BookingDTO updateBookingStatus(Long id, String status) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + id));
+
+        try {
+            booking.setStatus(Booking.Status.valueOf(status));
+            Booking updated = bookingRepository.save(booking);
+            return convertToBookingDTO(updated);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid status: " + status);
+        }
+    }
+
+    @Transactional
+    public void cancelBookingByAdmin(Long id, String reason) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + id));
+
+        booking.setStatus(Booking.Status.cancelled);
+        booking.setCancelReason(reason);
+        booking.setCancelledAt(java.time.LocalDateTime.now());
+        bookingRepository.save(booking);
+    }
 
     private void genCode(Booking entity) {
-        if(bookingRepository.getTop1()==null){
+        if (bookingRepository.getTop1() == null) {
             entity.setBookingCode("BK1");
-        }else{
+        } else {
             String code = bookingRepository.getTop1().getBookingCode();
-            entity.setBookingCode(code.substring(0,2)+((Integer.parseInt(code.substring(2)))+1));
+            entity.setBookingCode(code.substring(0, 2) + ((Integer.parseInt(code.substring(2))) + 1));
         }
     }
 

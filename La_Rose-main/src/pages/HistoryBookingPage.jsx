@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import bookingService from '../services/booking.service';
+import bookingService from '../admin/services/booking.service';
 
-const BookingManagement = () => {
+const HistoryBookingPage = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -16,15 +16,13 @@ const BookingManagement = () => {
             const params = {
                 page: page,
                 size: 20,
-                sortBy: 'createdAt',
-                sortDirection: 'desc'
             };
             
             if (statusFilter !== 'all') {
                 params.status = statusFilter;
             }
 
-            const response = await bookingService.getAllBookings(params);
+            const response = await bookingService.getHistoryBookings(params);
             setBookings(response.content || []);
             setTotalPages(response.totalPages || 0);
         } catch (err) {
@@ -39,31 +37,8 @@ const BookingManagement = () => {
         fetchBookings();
     }, [page, statusFilter]);
 
-    const handleCancel = async (bookingId, bookingCode) => {
-        if (window.confirm(`Bạn có chắc chắn muốn hủy đơn đặt phòng ${bookingCode}?`)) {
-            try {
-                const reason = prompt('Nhập lý do hủy (tùy chọn):');
-                await bookingService.cancelBooking(bookingId, reason || '');
-                alert('Hủy đơn đặt phòng thành công!');
-                fetchBookings(); // Refresh list
-            } catch (err) {
-                console.error('Error cancelling booking:', err);
-                alert('Lỗi khi hủy đơn đặt phòng: ' + (err.response?.data?.message || err.message));
-            }
-        }
-    };
 
-    const handleStatusChange = async (bookingId, newStatus) => {
-        try {
-            await bookingService.updateBookingStatus(bookingId, newStatus);
-            alert('Cập nhật trạng thái thành công!');
-            fetchBookings();
-        } catch (err) {
-            console.error('Error updating status:', err);
-            alert('Lỗi khi cập nhật trạng thái');
-        }
-    };
-
+    
     const formatDate = (dateString) => {
         if (!dateString) return '';
         return new Date(dateString).toLocaleDateString('vi-VN');
@@ -111,7 +86,7 @@ const BookingManagement = () => {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-lg">
         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-playfair font-bold text-gray-800">Quản lý đơn đặt phòng</h2>
+            <h2 className="text-2xl font-playfair font-bold text-gray-800">Lịch sử đặt phòng</h2>
             <div className="flex items-center gap-4">
                 <select 
                     value={statusFilter}
@@ -125,12 +100,6 @@ const BookingManagement = () => {
                     <option value="checked_out">Đã trả phòng</option>
                     <option value="cancelled">Đã hủy</option>
                 </select>
-                <button 
-                    onClick={fetchBookings}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                    <i className="fas fa-sync-alt mr-2"></i>Làm mới
-                </button>
             </div>
         </div>
 
@@ -151,7 +120,6 @@ const BookingManagement = () => {
                     <th scope="col" className="px-6 py-3">Số đêm</th>
                     <th scope="col" className="px-6 py-3">Tổng tiền</th>
                     <th scope="col" className="px-6 py-3">Trạng thái</th>
-                    <th scope="col" className="px-6 py-3">Thao tác</th>
                 </tr>
              </thead>
              <tbody>
@@ -188,31 +156,6 @@ const BookingManagement = () => {
                                     {getStatusLabel(booking.status)}
                                 </span>
                             </td>
-                            <td className="px-6 py-4">
-                                <div className="flex gap-2">
-                                    {booking.status !== 'cancelled' && booking.status !== 'checked_out' && (
-                                        <>
-                                            <select 
-                                                onChange={(e) => handleStatusChange(booking.id, e.target.value)}
-                                                className="text-xs px-2 py-1 border rounded"
-                                                value={booking.status}
-                                            >
-                                                <option value="pending">Chờ xử lý</option>
-                                                <option value="confirmed">Xác nhận</option>
-                                                <option value="checked_in">Nhận phòng</option>
-                                                <option value="checked_out">Trả phòng</option>
-                                            </select>
-                                            <button 
-                                                onClick={() => handleCancel(booking.id, booking.bookingCode)} 
-                                                className="text-red-600 hover:text-red-800 text-xs px-2 py-1"
-                                                title="Hủy đặt phòng"
-                                            >
-                                                <i className="fas fa-times-circle"></i>
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </td>
                         </tr>
                     ))
                 )}
@@ -245,4 +188,4 @@ const BookingManagement = () => {
   );
 };
 
-export default BookingManagement;
+export default HistoryBookingPage;

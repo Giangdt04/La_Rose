@@ -6,6 +6,7 @@ import com.larose.service.ReviewService;
 import com.larose.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -142,14 +143,14 @@ public class UserController {
     /**
      * Lấy danh sách đặt phòng theo trạng thái
      */
-    @GetMapping("/bookings/status/{status}")
-    public ResponseEntity<List<BookingDTO>> getUserBookingsByStatus(
+    @GetMapping("/bookings/status")
+    public ResponseEntity<Page<BookingDTO>> getUserBookingsByStatus(
             @AuthenticationPrincipal org.springframework.security.core.userdetails.User principal,
-            @PathVariable String status,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         String email = principal.getUsername();
-        List<BookingDTO> bookings = bookingService.getUserBookingsByStatus(email, status, page, size);
+        Page<BookingDTO> bookings = bookingService.getUserBookingsByStatus(email, status, page, size);
         return ResponseEntity.ok(bookings);
     }
 
