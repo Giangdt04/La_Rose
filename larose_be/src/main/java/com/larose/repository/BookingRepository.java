@@ -1,5 +1,9 @@
 package com.larose.repository;
 
+import com.larose.dto.projection.BookingProjection;
+import com.larose.dto.projection.RoomsProjection;
+import com.larose.dto.search.BookingSearchDto;
+import com.larose.dto.search.RoomSearchDto;
 import com.larose.entity.Booking;
 import com.larose.entity.Room;
 import org.springframework.data.domain.Page;
@@ -68,6 +72,45 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """, nativeQuery = true)
     BigDecimal sumTotalPrice(@Param("days") Integer days);
 
+    @Query(value = """
+                    SELECT * FROM bookings
+                    where check_out >= NOW()
+                    and room_id = :roomId
+                    """, nativeQuery = true)
+    List<Booking> getBookingDateWithRoomId(Long roomId);
+
+    @Query(value = """
+    SELECT 
+        b.id AS id,
+        b.booking_code AS bookingCode,
+        b.check_in AS checkIn,
+        b.check_out AS checkOut,
+        b.nights AS nights,
+        b.guests AS guests,
+        b.price_total AS priceTotal,
+        b.status AS status,
+        b.updated_at AS updatedAt,
+        b.created_at AS createdAt,
+
+        u.id AS userId,
+        u.email AS userEmail,
+        u.full_name AS userFullName,
+
+        r.id AS roomId,
+        r.title AS roomTitle,
+        r.code AS roomCode,
+
+        t.id AS roomTypeId,
+        t.name AS roomTypeName
+    FROM bookings b
+    LEFT JOIN users u ON b.user_id = u.id
+    LEFT JOIN rooms r ON b.room_id = r.id
+    LEFT JOIN room_types t ON b.room_type_id = t.id
+    WHERE (:#{#request.status} IS NULL OR b.status LIKE CONCAT(:#{#request.status}, '%'))
+        AND (:#{#request.code} IS NULL OR b.booking_code LIKE CONCAT(:#{#request.code}, '%'))
+    ORDER BY b.created_at DESC
+    """, nativeQuery = true)
+    Page<BookingProjection> getAll(BookingSearchDto request, Pageable pageable);
 
     Optional<Booking> findByRoomId(Long roomId);
 

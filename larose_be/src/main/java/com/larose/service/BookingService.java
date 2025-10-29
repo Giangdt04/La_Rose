@@ -1,6 +1,9 @@
 package com.larose.service;
 
 import com.larose.dto.BookingDTO;
+import com.larose.dto.projection.BookingProjection;
+import com.larose.dto.search.BookingSearchDto;
+import com.larose.dto.search.SearchDto;
 import com.larose.entity.Booking;
 import com.larose.entity.Room;
 import com.larose.entity.User;
@@ -12,8 +15,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,6 +65,32 @@ public class BookingService {
         }
     }
 
+    public Page<BookingDTO> getAll(BookingSearchDto request) {
+        Pageable pageable = PageRequest.of(request.getPageIndex() - 1, request.getPageSize());
+
+        Page<BookingProjection> bookings = bookingRepository.getAll(request,pageable);
+
+        return bookings.map(bookingMapper::toBookingDTO);
+    }
+
+    public List<BookingDTO> getBookingDateWithRoomId(Long roomId){
+        if (roomId == null){
+            return Collections.emptyList();
+        }
+        List<Booking> list = bookingRepository.getBookingDateWithRoomId(roomId);
+        if(CollectionUtils.isEmpty(list)){
+            return Collections.emptyList();
+        }
+        return list.stream().map(bookingMapper::toBookingDTO).collect(Collectors.toList());
+    }
+
+    public BookingDTO getDetail(Long id){
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+        return convertToBookingDTO(booking);
+    }
+
+
     public BookingDTO create(BookingDTO request) {
         Booking booking = bookingMapper.toBooking(request);
 
@@ -85,6 +116,45 @@ public class BookingService {
 
         return this.convertToBookingDTO(bookingRepository.save(booking));
     }
+
+    public BookingDTO update(Long id,BookingDTO request) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Not Found Booking with id: " + request.getId()));
+
+        booking.setCheckIn(request.getCheckIn());
+        booking.setCheckOut(request.getCheckOut());
+        booking.setGuests(request.getGuests());
+        booking.setNights(request.getNights());
+
+        Room room = booking.getRoom();
+
+        if (!booking.getRoom().getCode().equals(request.getRoomCode())) {
+            room = roomService.getRoom(request.getRoomCode());
+            booking.setRoom(room);
+        }
+
+        if (room.getRoomType() == null) {
+            throw new IllegalArgumentException("Phòng không có loại phòng được gán.");
+        }
+
+        booking.setRoomType(room.getRoomType());
+
+        BigDecimal total = room.getRoomType().getBasePrice()
+                .multiply(BigDecimal.valueOf(request.getNights()));
+        booking.setPriceTotal(total);
+
+        return this.convertToBookingDTO(bookingRepository.save(booking));
+    }
+
+
+    public void delete(Long id) {
+        Booking delete = bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Not Found Booking with id: " + id));
+        delete.setStatus(Booking.Status.no_show);
+        bookingRepository.save(delete);
+    }
+
+
 
     @Transactional
     public void cancelBooking(Long bookingId) {
