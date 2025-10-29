@@ -247,7 +247,7 @@ const handleSubmit = async (e) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                 >
                   <option value="available">Có sẵn</option>
-                  <option value="occupied">Đã đặt</option>
+                  <option value="offline">Đã đặt</option>
                   <option value="maintenance">Bảo trì</option>
                   <option value="cleaning">Đang dọn dẹp</option>
                 </select>

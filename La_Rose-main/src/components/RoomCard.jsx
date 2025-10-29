@@ -23,7 +23,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                     text: "Có sẵn",
                     class: "bg-green-100 text-green-800 border border-green-200",
                 };
-            case "occupied":
+            case "offline":
                 return {
                     text: "Đã đặt",
                     class: "bg-red-100 text-red-800 border border-red-200",

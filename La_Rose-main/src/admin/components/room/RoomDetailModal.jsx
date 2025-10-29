@@ -13,9 +13,9 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
     const getStatusText = (status) => {
         const statusMap = {
             available: "Trống",
-            occupied: "Đã đặt",
+            offline: "Đã đặt",
             maintenance: "Bảo trì",
-            cleaning: "Đang dọn dẹp",
+             
         };
         return statusMap[status] || status;
     };
@@ -23,7 +23,7 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
     const getStatusClass = (status) => {
         const statusClasses = {
             available: "bg-green-100 text-green-800",
-            occupied: "bg-blue-100 text-blue-800",
+            offline: "bg-blue-100 text-blue-800",
             maintenance: "bg-yellow-100 text-yellow-800",
             cleaning: "bg-purple-100 text-purple-800",
         };

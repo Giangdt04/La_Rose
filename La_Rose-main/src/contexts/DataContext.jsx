@@ -7,7 +7,7 @@ export const useData = () => useContext(DataContext);
 const initialData = {
   rooms: [
     { id: 1, number: '101', type: 'deluxe', price: 2500000, status: 'available' },
-    { id: 2, number: '102', type: 'deluxe', price: 2500000, status: 'occupied' },
+    { id: 2, number: '102', type: 'deluxe', price: 2500000, status: 'offline' },
     { id: 3, number: '201', type: 'suite', price: 4500000, status: 'available' },
     { id: 4, number: '301', type: 'honeymoon', price: 3800000, status: 'available' }
   ],
@@ -39,7 +39,7 @@ export const DataProvider = ({ children }) => {
     // Logic to update room status
     const roomToUpdate = rooms.find(r => r.number === newBooking.roomNumber);
     if (roomToUpdate) {
-        setRooms(prevRooms => prevRooms.map(r => r.id === roomToUpdate.id ? {...r, status: 'occupied'} : r));
+        setRooms(prevRooms => prevRooms.map(r => r.id === roomToUpdate.id ? {...r, status: 'offline'} : r));
     }
   };
 

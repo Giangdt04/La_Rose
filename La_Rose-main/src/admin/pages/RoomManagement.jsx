@@ -233,9 +233,9 @@ const RoomManagement = () => {
     const getStatusText = (status) => {
         const statusMap = {
             available: "Trống",
-            occupied: "Đã đặt",
+            offline: "Đã đặt",
             maintenance: "Bảo trì",
-            cleaning: "Đang dọn dẹp",
+             
         };
         return statusMap[status] || status;
     };
@@ -243,7 +243,7 @@ const RoomManagement = () => {
     const getStatusColor = (status) => {
         const statusColors = {
             available: "text-green-600 bg-green-100",
-            occupied: "text-blue-600 bg-blue-100",
+            offline: "text-blue-600 bg-blue-100",
             maintenance: "text-yellow-600 bg-yellow-100",
             cleaning: "text-purple-600 bg-purple-100",
         };
