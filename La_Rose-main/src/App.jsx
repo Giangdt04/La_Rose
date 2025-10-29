@@ -14,41 +14,37 @@ import NotFoundPage from "./pages/NotFoundPage";
 import ProfilePage from "./pages/ProfilePage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import AdminLoginPage from "./admin/pages/AdminLoginPage";
+import ApiTestPage from "./pages/ApiTestPage";
 
 function App() {
-    return (
-        <Routes>
-            {/* Client Routes */}
-            <Route path="/" element={<MainLayout />}>
-                <Route index element={<HomePage />} />
-                <Route path="rooms" element={<RoomsPage />} />
-                <Route path="booking" element={<BookingPage />} />
-                <Route path="login" element={<LoginPage state={"login"} />} />
-                <Route
-                    path="register"
-                    element={<LoginPage state={"register"} />}
-                />
+  return (
+    <Routes>
+      {/* Client Routes */}
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<HomePage />} />
+        <Route path="rooms" element={<RoomsPage />} />
+        <Route path="booking" element={<BookingPage />} />
+        <Route path="login" element={<LoginPage state={"login"} />} />
+        <Route path="register" element={<LoginPage state={"register"} />} />
 
-                <Route path="about" element={<AboutPage />} />
-                <Route path="profile" element={<ProfilePage />} />
-                <Route
-                    path="/api/auth/verify"
-                    element={<EmailVerificationPage />}
-                />
-                <Route path="*" element={<NotFoundPage />} />
-            </Route>
+        <Route path="about" element={<AboutPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="api-test" element={<ApiTestPage />} />
+        <Route path="/api/auth/verify" element={<EmailVerificationPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
 
-            {/* Admin Routes */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
-            <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="rooms" element={<RoomManagement />} />
-                <Route path="bookings" element={<BookingManagement />} />
-                <Route path="customers" element={<CustomerManagement />} />
-                <Route path="*" element={<NotFoundPage />} />
-            </Route>
-        </Routes>
-    );
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="rooms" element={<RoomManagement />} />
+        <Route path="bookings" element={<BookingManagement />} />
+        <Route path="customers" element={<CustomerManagement />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
+  );
 }
 
 export default App;

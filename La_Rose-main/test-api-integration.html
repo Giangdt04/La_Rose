@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test API Integration - La Rose</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 32px;
+      }
+      .status {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+      .status.online {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status.offline {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+      }
+      .test-section h2 {
+        color: #667eea;
+        margin-bottom: 15px;
+        font-size: 24px;
+      }
+      .test-item {
+        margin: 10px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #ccc;
+      }
+      .test-item.success {
+        border-left-color: #28a745;
+        background: #d4edda;
+      }
+      .test-item.error {
+        border-left-color: #dc3545;
+        background: #f8d7da;
+      }
+      .test-item.pending {
+        border-left-color: #ffc107;
+        background: #fff3cd;
+      }
+      button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        margin: 5px;
+        transition: transform 0.2s;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .credentials {
+        background: #e3f2fd;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+      }
+      .credentials input {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+        max-height: 200px;
+        overflow-y: auto;
+        font-size: 12px;
+      }
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .stats {
+        display: flex;
+        justify-content: space-around;
+        margin: 20px 0;
+      }
+      .stat-card {
+        text-align: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        flex: 1;
+        margin: 0 10px;
+      }
+      .stat-card h3 {
+        font-size: 36px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🧪 Test API Integration - La Rose Hotel</h1>
+
+      <div id="backendStatus" class="status offline">
+        Backend: Checking... <span class="loading"></span>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div>Total Tests</div>
+          <h3 id="totalTests">0</h3>
+        </div>
+        <div
+          class="stat-card"
+          style="background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)"
+        >
+          <div>Passed</div>
+          <h3 id="passedTests">0</h3>
+        </div>
+        <div
+          class="stat-card"
+          style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%)"
+        >
+          <div>Failed</div>
+          <h3 id="failedTests">0</h3>
+        </div>
+      </div>
+
+      <div class="credentials">
+        <h3>🔐 Test Credentials</h3>
+        <input
+          type="email"
+          id="testEmail"
+          placeholder="Email"
+          value="nofail2k4@gmail.com"
+        />
+        <input
+          type="password"
+          id="testPassword"
+          placeholder="Password"
+          value=""
+        />
+        <button onclick="loginAndTest()">🚀 Login & Run All Tests</button>
+        <button onclick="runAllTests()">🔄 Run Tests (Use Saved Token)</button>
+      </div>
+
+      <div id="testResults"></div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:8080/api";
+      let accessToken = localStorage.getItem("accessToken");
+      let testResults = {
+        total: 0,
+        passed: 0,
+        failed: 0,
+      };
+
+      const tests = [
+        // Auth APIs
+        {
+          name: "Login",
+          method: "POST",
+          endpoint: "/auth/login",
+          body: null,
+          requiresAuth: false,
+          category: "Auth",
+        },
+        {
+          name: "Get Current User Profile",
+          method: "GET",
+          endpoint: "/users/profile",
+          requiresAuth: true,
+          category: "User",
+        },
+        {
+          name: "Update User Profile",
+          method: "PUT",
+          endpoint: "/users/profile",
+          body: { fullName: "Test Update", phone: "0886528046" },
+          requiresAuth: true,
+          category: "User",
+        },
+
+        // Room APIs
+        {
+          name: "Get All Rooms",
+          method: "GET",
+          endpoint: "/rooms",
+          requiresAuth: false,
+          category: "Room",
+        },
+        {
+          name: "Get Room Types",
+          method: "GET",
+          endpoint: "/room-types",
+          requiresAuth: false,
+          category: "Room",
+        },
+
+        // Booking APIs
+        {
+          name: "Get User Bookings",
+          method: "GET",
+          endpoint: "/users/bookings/status/PENDING",
+          requiresAuth: true,
+          category: "Booking",
+        },
+
+        // Review APIs
+        {
+          name: "Get Reviews by Room",
+          method: "GET",
+          endpoint: "/reviews/room/1",
+          requiresAuth: false,
+          category: "Review",
+        },
+
+        // Statistical APIs
+        {
+          name: "Get Total Rooms",
+          method: "GET",
+          endpoint: "/statistical/rooms/total",
+          requiresAuth: false,
+          category: "Statistics",
+        },
+        {
+          name: "Get Total Bookings",
+          method: "GET",
+          endpoint: "/statistical/bookings/total",
+          requiresAuth: false,
+          category: "Statistics",
+        },
+      ];
+
+      async function checkBackendStatus() {
+        try {
+          const response = await fetch(`${API_BASE}/rooms`);
+          const statusEl = document.getElementById("backendStatus");
+          if (response.ok) {
+            statusEl.className = "status online";
+            statusEl.innerHTML = "✅ Backend: Online & Ready";
+          } else {
+            statusEl.className = "status offline";
+            statusEl.innerHTML =
+              "⚠️ Backend: Online but Error " + response.status;
+          }
+        } catch (error) {
+          document.getElementById("backendStatus").className = "status offline";
+          document.getElementById("backendStatus").innerHTML =
+            "❌ Backend: Offline - " + error.message;
+        }
+      }
+
+      async function loginAndTest() {
+        const email = document.getElementById("testEmail").value;
+        const password = document.getElementById("testPassword").value;
+
+        if (!email || !password) {
+          alert("Please enter email and password!");
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            accessToken = data.accessToken;
+            localStorage.setItem("accessToken", accessToken);
+            alert("✅ Login successful! Running tests...");
+            await runAllTests();
+          } else {
+            const error = await response.json();
+            alert("❌ Login failed: " + (error.message || "Unknown error"));
+          }
+        } catch (error) {
+          alert("❌ Login error: " + error.message);
+        }
+      }
+
+      async function runAllTests() {
+        if (!accessToken) {
+          alert("⚠️ No access token! Please login first.");
+          return;
+        }
+
+        testResults = { total: 0, passed: 0, failed: 0 };
+        document.getElementById("testResults").innerHTML = "";
+
+        const categories = [...new Set(tests.map((t) => t.category))];
+
+        for (const category of categories) {
+          const categoryTests = tests.filter((t) => t.category === category);
+          const section = document.createElement("div");
+          section.className = "test-section";
+          section.innerHTML = `<h2>${category} APIs</h2>`;
+
+          for (const test of categoryTests) {
+            testResults.total++;
+            updateStats();
+
+            const testItem = document.createElement("div");
+            testItem.className = "test-item pending";
+            testItem.innerHTML = `
+                        <strong>${test.name}</strong> - ${test.method} ${test.endpoint}
+                        <div class="loading"></div>
+                    `;
+            section.appendChild(testItem);
+            document.getElementById("testResults").appendChild(section);
+
+            await runTest(test, testItem);
+          }
+        }
+      }
+
+      async function runTest(test, testItem) {
+        const headers = { "Content-Type": "application/json" };
+        if (test.requiresAuth && accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
+        }
+
+        const options = {
+          method: test.method,
+          headers: headers,
+        };
+
+        if (test.body) {
+          options.body = JSON.stringify(test.body);
+        } else if (test.name === "Login") {
+          options.body = JSON.stringify({
+            email: document.getElementById("testEmail").value,
+            password: document.getElementById("testPassword").value,
+          });
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}${test.endpoint}`, options);
+          const data = await response.json().catch(() => ({}));
+
+          if (response.ok) {
+            testResults.passed++;
+            testItem.className = "test-item success";
+            testItem.innerHTML = `
+                        <strong>✅ ${test.name}</strong> - ${test.method} ${
+              test.endpoint
+            }
+                        <div style="color: #155724; margin-top: 5px;">Status: ${
+                          response.status
+                        } ${response.statusText}</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+          } else {
+            testResults.failed++;
+            testItem.className = "test-item error";
+            testItem.innerHTML = `
+                        <strong>❌ ${test.name}</strong> - ${test.method} ${
+              test.endpoint
+            }
+                        <div style="color: #721c24; margin-top: 5px;">Status: ${
+                          response.status
+                        } ${response.statusText}</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+          }
+        } catch (error) {
+          testResults.failed++;
+          testItem.className = "test-item error";
+          testItem.innerHTML = `
+                    <strong>❌ ${test.name}</strong> - ${test.method} ${test.endpoint}
+                    <div style="color: #721c24; margin-top: 5px;">Error: ${error.message}</div>
+                `;
+        }
+
+        updateStats();
+      }
+
+      function updateStats() {
+        document.getElementById("totalTests").textContent = testResults.total;
+        document.getElementById("passedTests").textContent = testResults.passed;
+        document.getElementById("failedTests").textContent = testResults.failed;
+      }
+
+      // Check backend status on load
+      checkBackendStatus();
+      setInterval(checkBackendStatus, 5000);
+    </script>
+  </body>
+</html>
