@@ -14,44 +14,61 @@ import java.util.Optional;
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
-    @Query(value = """
-            select 
-                r.id as room_id,
-                r.code as room_code,
-                r.title as room_title,
-                r.price as room_price,
-                r.status as room_status,
-                r.created_at as room_created_at,
-                r.deleted_at as room_deleted_at,
-                r.updated_at as room_updated_at,
-                r.description as room_description,
-            
-                t.id as type_id,
-                t.name as type_name,
-                t.short_description as type_short_description,
-                t.base_price as basePrice
-            from rooms r
-            left join room_types t on r.room_type_id = t.id
-            where (:#{#request.minPrice} is null or r.price >= :#{#request.minPrice})
-              and (:#{#request.maxPrice} is null or r.price <= :#{#request.maxPrice})
-              and (:#{#request.typeId} is null or t.id = :#{#request.typeId})
-              and (:#{#request.keyword} is null or r.code = :#{#request.keyword})
-              and r.deleted_at is null 
-            order by r.created_at desc 
-            """, nativeQuery = true)
-    Page<RoomsProjection> getRooms(RoomSearchDto request, Pageable pageable);
-
+	@Query(value = """
+		    SELECT 
+		        r.id as room_id,
+		        r.code as room_code,
+		        r.title as room_title,
+		        r.price as room_price,
+		        r.status as room_status,
+		        r.capacity as room_capacity,
+		        r.amenities as room_amenities,
+		        r.created_at as room_created_at,
+		        r.deleted_at as room_deleted_at,
+		        r.updated_at as room_updated_at,
+		        r.description as room_description,
+		    
+		        t.id as type_id,
+		        t.name as type_name,
+		        t.short_description as type_short_description,
+		        t.base_price as base_price
+		    FROM rooms r
+		    LEFT JOIN room_types t ON r.room_type_id = t.id
+		    WHERE r.deleted_at IS NULL
+		      AND (:#{#request.minPrice} IS NULL OR r.price >= :#{#request.minPrice})
+		      AND (:#{#request.maxPrice} IS NULL OR r.price <= :#{#request.maxPrice})
+		      AND (:#{#request.typeId} IS NULL OR t.id = :#{#request.typeId})
+		      AND (:#{#request.capacity} IS NULL OR r.capacity = :#{#request.capacity})
+		      AND (:#{#request.keyword} IS NULL OR 
+		           LOWER(r.title) LIKE LOWER(CONCAT('%', :#{#request.keyword}, '%')) OR
+		           LOWER(r.description) LIKE LOWER(CONCAT('%', :#{#request.keyword}, '%')))
+		    ORDER BY r.created_at DESC
+		    """, 
+		    countQuery = """
+		        SELECT COUNT(*)
+		        FROM rooms r
+		        LEFT JOIN room_types t ON r.room_type_id = t.id
+		        WHERE r.deleted_at IS NULL
+		          AND (:#{#request.minPrice} IS NULL OR r.price >= :#{#request.minPrice})
+		          AND (:#{#request.maxPrice} IS NULL OR r.price <= :#{#request.maxPrice})
+		          AND (:#{#request.typeId} IS NULL OR t.id = :#{#request.typeId})
+		          AND (:#{#request.capacity} IS NULL OR r.capacity = :#{#request.capacity})
+		          AND (:#{#request.keyword} IS NULL OR 
+		               LOWER(r.title) LIKE LOWER(CONCAT('%', :#{#request.keyword}, '%')) OR
+		               LOWER(r.description) LIKE LOWER(CONCAT('%', :#{#request.keyword}, '%')))
+		        """,
+		    nativeQuery = true)
+		Page<RoomsProjection> getRooms(RoomSearchDto request, Pageable pageable);
     Optional<Room> findByCode(String code);
 
     @Query(value = """
-            select * from rooms order by rooms.id desc limit 1
-            """,nativeQuery = true)
+            SELECT * FROM rooms ORDER BY rooms.id DESC LIMIT 1
+            """, nativeQuery = true)
     Room getTop1();
 
     @Query(value = """
-            select COUNT(DISTINCT r.id)
-            from rooms r
+            SELECT COUNT(DISTINCT r.id)
+            FROM rooms r
             """, nativeQuery = true)
     Long countAllRooms();
-
 }

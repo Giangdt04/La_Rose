@@ -1,40 +1,39 @@
-// /src/pages/RoomsPage.jsx
+// src/pages/RoomsPage.jsx
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RoomCard from "../components/RoomCard";
-import roomService from "../services/room.service"; // Đảm bảo import service
-import bookingService from "../services/booking.service"; // <-- SỬA: THÊM DÒNG NÀY
+import roomService from "../services/room.service";
 
 const RoomsPage = () => {
     const [rooms, setRooms] = useState([]);
     const [roomTypes, setRoomTypes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
     const [filters, setFilters] = useState({
         keyword: "",
-        minPrice: "",
-        maxPrice: "",
         typeId: "",
-    });
-    // State này lưu trữ các filter đã được áp dụng (khi nhấn nút tìm kiếm)
-    const [appliedFilters, setAppliedFilters] = useState({
-        keyword: "",
-        minPrice: "",
-        maxPrice: "",
-        typeId: "",
+        priceRange: "",
+        capacity: "",
     });
 
-    // State cho phân trang
-    const [currentPage, setCurrentPage] = useState(0); // Spring Pageable bắt đầu từ 0
+    const [appliedFilters, setAppliedFilters] = useState({
+        keyword: "",
+        typeId: "",
+        priceRange: "",
+        capacity: "",
+    });
+
+    const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
-    const [pageSize, setPageSize] = useState(18); // Giữ nguyên 18
+    const [pageSize, setPageSize] = useState(18);
 
     const navigate = useNavigate();
 
-    // 1. Fetch room types (Lấy loại phòng tự động từ API)
-        useEffect(() => {
+    // Lấy loại phòng
+    useEffect(() => {
         const fetchRoomTypes = async () => {
             try {
                 const types = await roomService.getAllRoomTypes();
@@ -44,106 +43,105 @@ const RoomsPage = () => {
                 console.error("Error fetching room types:", err);
             }
         };
-
         fetchRoomTypes();
-    }, []); // Chỉ chạy 1 lần khi trang được tải
+    }, []);
 
-    // 2. Fetch rooms từ API (Lọc trên server)
+    // Lấy phòng
     useEffect(() => {
         const fetchRooms = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                // Chuẩn bị params cho API, khớp với RoomController
-                const params = {
-                    keyword: appliedFilters.keyword || undefined,
-                    minPrice: appliedFilters.minPrice ? parseFloat(appliedFilters.minPrice) : undefined,
-                    maxPrice: appliedFilters.maxPrice ? parseFloat(appliedFilters.maxPrice) : undefined,
-                    typeId: appliedFilters.typeId ? parseInt(appliedFilters.typeId) : undefined,
-                    page: currentPage,
-                    size: pageSize,
-                    sort: "createdAt,desc" // Thêm sort nếu cần
-                };
+                // Parse priceRange
+                let minPrice, maxPrice;
+                if (appliedFilters.priceRange) {
+                    if (appliedFilters.priceRange === "10000000-") {
+                        minPrice = 10000000;
+                    } else {
+                        const [min, max] = appliedFilters.priceRange.split("-").map(Number);
+                        minPrice = min;
+                        maxPrice = max;
+                    }
+                }
 
-                // Gọi API getAllRooms với đầy đủ filter và pagination
+                // Parse capacity — chỉ gửi nếu có giá trị hợp lệ
+                const capacity = appliedFilters.capacity
+                    ? Number(appliedFilters.capacity)
+                    : undefined;
+
+                // ✅ TẠO PARAMS CHUẨN
+                const params = {};
+                if (appliedFilters.keyword) params.keyword = appliedFilters.keyword;
+                if (minPrice !== undefined) params.minPrice = minPrice;
+                if (maxPrice !== undefined) params.maxPrice = maxPrice;
+                if (appliedFilters.typeId) params.typeId = appliedFilters.typeId;
+                if (capacity !== undefined && !isNaN(capacity)) params.capacity = capacity;
+                params.page = currentPage;
+                params.size = pageSize;
+
                 const response = await roomService.getAllRooms(params);
-                
-                // Cập nhật state từ phản hồi Pageable của Spring
                 setRooms(response.content || []);
                 setTotalPages(response.totalPages || 0);
                 setTotalElements(response.totalElements || 0);
             } catch (err) {
                 console.error("Error fetching rooms:", err);
-                setError(
-                    "Không thể tải danh sách phòng. Vui lòng thử lại sau.",
-                );
+                setError("Không thể tải danh sách phòng. Vui lòng thử lại sau.");
             } finally {
                 setLoading(false);
             }
         };
 
         fetchRooms();
-    }, [currentPage, pageSize, appliedFilters]); // Chạy lại khi trang, size, hoặc filter thay đổi
+    }, [currentPage, pageSize, appliedFilters]);
 
-    // Cập nhật state filter tạm thời khi người dùng gõ
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
-    // 3. Áp dụng filter (Search rooms từ server)
     const handleSearchFromServer = () => {
-        // Đặt appliedFilters bằng filter hiện tại và reset về trang 0
         setAppliedFilters({ ...filters });
-        setCurrentPage(0); // Reset về trang đầu tiên khi tìm kiếm
+        setCurrentPage(0);
     };
 
-    // 4. Reset filters
     const handleResetFilters = () => {
-        const initialFilters = {
+        const resetFilters = {
             keyword: "",
-            minPrice: "",
-            maxPrice: "",
             typeId: "",
+            priceRange: "",
+            capacity: "",
         };
-        setFilters(initialFilters);
-        setAppliedFilters(initialFilters);
-        setCurrentPage(0); // Reset về trang đầu tiên
+        setFilters(resetFilters);
+        setAppliedFilters(resetFilters);
+        setCurrentPage(0);
     };
 
-    // Xử lý chuyển trang
     const handlePageChange = (newPage) => {
         if (newPage >= 0 && newPage < totalPages) {
             setCurrentPage(newPage);
         }
     };
 
-    // Xử lý thay đổi số lượng item mỗi trang
     const handlePageSizeChange = (e) => {
         const newSize = parseInt(e.target.value);
         setPageSize(newSize);
-        setCurrentPage(0); // Reset về trang đầu tiên khi đổi size
+        setCurrentPage(0);
     };
 
-    // Hàm xử lý đặt phòng - chuyển hướng đến booking page với dữ liệu phòng
     const handleBookRoom = (room) => {
-        // Chuẩn bị dữ liệu để truyền sang booking page
         const bookingData = {
             roomId: room.id,
-            // Đảm bảo lấy đúng tên loại phòng và giá
-            roomType: room.roomType?.name || room.title, 
+            roomType: room.roomType?.name || room.title,
             roomNumber: room.code,
-            price: room.price || room.roomType?.basePrice, // Ưu tiên giá của phòng, nếu không có thì lấy giá của loại phòng
+            price: room.price || room.roomType?.basePrice,
             roomTitle: room.title,
             roomDescription: room.description,
-            roomArea: room.area,
-            roomCapacity: room.roomType?.maxGuests || room.capacity || 2,
+            roomCapacity: room.capacity || room.roomType?.maxGuests || 2,
             roomImages: room.images,
             status: room.status,
         };
 
-        // Chuyển hướng đến booking page với state
         navigate("/booking", {
             state: {
                 preFilledData: bookingData,
@@ -152,46 +150,34 @@ const RoomsPage = () => {
         });
     };
 
-    // Tạo danh sách số trang để hiển thị
     const getPageNumbers = () => {
         const pageNumbers = [];
         const maxVisiblePages = 5;
-        let startPage = Math.max(
-            0,
-            currentPage - Math.floor(maxVisiblePages / 2),
-        );
+        let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
         let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
-
         if (endPage - startPage + 1 < maxVisiblePages) {
             startPage = Math.max(0, endPage - maxVisiblePages + 1);
         }
-
         for (let i = startPage; i <= endPage; i++) {
             pageNumbers.push(i);
         }
         return pageNumbers;
     };
 
-    // Hiển thị trạng thái Đang tải
-    if (loading && rooms.length === 0) { // Chỉ hiển thị loading toàn trang khi tải lần đầu
+    if (loading && rooms.length === 0) {
         return (
             <div className="container mx-auto px-6 py-16">
                 <div className="flex justify-center items-center h-64">
-                    <div className="text-lg text-gray-600">
-                        Đang tải danh sách phòng...
-                    </div>
+                    <div className="text-lg text-gray-600">Đang tải danh sách phòng...</div>
                 </div>
             </div>
         );
     }
 
-    // Hiển thị trạng thái Lỗi
     if (error && rooms.length === 0) {
         return (
             <div className="container mx-auto px-6 py-16">
-                <div className="text-center text-red-600 bg-red-50 p-4 rounded-lg">
-                    {error}
-                </div>
+                <div className="text-center text-red-600 bg-red-50 p-4 rounded-lg">{error}</div>
             </div>
         );
     }
@@ -202,15 +188,10 @@ const RoomsPage = () => {
                 Khám Phá Không Gian Nghỉ Dưỡng
             </h2>
 
-            {/* Filters (Khớp với RoomController) */}
             <div className="bg-white shadow-lg rounded-lg p-6 mb-12 border border-gray-100">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-end">
-                    {/* Keyword */}
                     <div className="lg:col-span-1 xl:col-span-1">
-                        <label
-                            htmlFor="keyword"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
+                        <label htmlFor="keyword" className="block text-sm font-medium text-gray-700 mb-1">
                             Từ khóa
                         </label>
                         <input
@@ -224,12 +205,8 @@ const RoomsPage = () => {
                         />
                     </div>
 
-                    {/* Room Type (Lấy từ API) */}
                     <div className="lg:col-span-1 xl:col-span-1">
-                        <label
-                            htmlFor="typeId"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
+                        <label htmlFor="typeId" className="block text-sm font-medium text-gray-700 mb-1">
                             Loại phòng
                         </label>
                         <select
@@ -239,8 +216,7 @@ const RoomsPage = () => {
                             onChange={handleFilterChange}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
                         >
-                            <option value="">Tất cả loại phòng</option>
-                            {/* Render loại phòng tự động */}
+                            <option value="">Tất cả</option>
                             {roomTypes.map((type) => (
                                 <option key={type.id} value={type.id}>
                                     {type.name}
@@ -249,46 +225,49 @@ const RoomsPage = () => {
                         </select>
                     </div>
 
-                    {/* Min Price */}
                     <div className="lg:col-span-1 xl:col-span-1">
-                        <label
-                            htmlFor="minPrice"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                            Giá tối thiểu
+                        <label htmlFor="priceRange" className="block text-sm font-medium text-gray-700 mb-1">
+                            Khoảng giá
                         </label>
-                        <input
-                            type="number"
-                            name="minPrice"
-                            id="minPrice"
-                            value={filters.minPrice}
+                        <select
+                            name="priceRange"
+                            id="priceRange"
+                            value={filters.priceRange}
                             onChange={handleFilterChange}
-                            placeholder="Từ"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                        />
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
+                        >
+                            <option value="">Tất cả mức giá</option>
+                            <option value="0-1000000">Dưới 1 triệu</option>
+                            <option value="1000000-2000000">1 – 2 triệu</option>
+                            <option value="2000000-5000000">2 – 5 triệu</option>
+                            <option value="5000000-10000000">5 – 10 triệu</option>
+                            <option value="10000000-">Trên 10 triệu</option>
+                        </select>
                     </div>
 
-                    {/* Max Price */}
                     <div className="lg:col-span-1 xl:col-span-1">
-                        <label
-                            htmlFor="maxPrice"
-                            className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                            Giá tối đa
+                        <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 mb-1">
+                            Số người
                         </label>
-                        <input
-                            type="number"
-                            name="maxPrice"
-                            id="maxPrice"
-                            value={filters.maxPrice}
+                        <select
+                            name="capacity"
+                            id="capacity"
+                            value={filters.capacity}
                             onChange={handleFilterChange}
-                            placeholder="Đến"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                        />
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white"
+                        >
+                            <option value="">Tất cả</option>
+                            <option value="1">1 người</option>
+                            <option value="2">2 người</option>
+                            <option value="3">3 người</option>
+                            <option value="4">3 người</option>
+                            <option value="5">5 người</option>
+                            <option value="6">6 người</option>
+
+                        </select>
                     </div>
 
-                    {/* Buttons */}
-                    <div className="flex gap-2 items-center justify-start lg:col-span-2 xl:col-span-1 lg:mt-6 xl:mt-0">
+                    <div className="flex gap-2 items-center justify-start lg:col-span-1 xl:col-span-1 lg:mt-6 xl:mt-0">
                         <button
                             onClick={handleSearchFromServer}
                             className="flex-1 w-full bg-rose-600 text-white py-2 px-5 rounded-lg hover:bg-rose-700 transition-colors duration-200 font-medium"
@@ -319,7 +298,6 @@ const RoomsPage = () => {
                 </div>
             </div>
 
-            {/* Room List */}
             {rooms.length > 0 ? (
                 <>
                     <div className="flex justify-between items-center mb-6">
@@ -327,18 +305,18 @@ const RoomsPage = () => {
                             Hiển thị <b>{rooms.length}</b> trong tổng số <b>{totalElements}</b> kết quả
                         </div>
                         <div className="flex items-center gap-2">
-                             <label className="text-sm text-gray-600">Hiển thị:</label>
-                             <select
-                                 value={pageSize}
-                                 onChange={handlePageSizeChange}
-                                 className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-colors text-sm"
-                             >
-                                 <option value={9}>9</option>
-                                 <option value={18}>18</option>
-                                 <option value={36}>36</option>
-                                 <option value={54}>54</option>
-                             </select>
-                         </div>
+                            <label className="text-sm text-gray-600">Hiển thị:</label>
+                            <select
+                                value={pageSize}
+                                onChange={handlePageSizeChange}
+                                className="p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-colors text-sm"
+                            >
+                                <option value={9}>9</option>
+                                <option value={18}>18</option>
+                                <option value={36}>36</option>
+                                <option value={54}>54</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -346,17 +324,14 @@ const RoomsPage = () => {
                             <RoomCard
                                 key={room.id}
                                 room={room}
-                                // Lấy ảnh primary, nếu không có thì lấy ảnh đầu tiên
                                 primaryImageUrl={
-                                    room.images?.find((img) => img.isPrimary)
-                                        ?.url || room.images?.[0]?.url
+                                    room.images?.find((img) => img.isPrimary)?.url || room.images?.[0]?.url
                                 }
                                 onBookNow={() => handleBookRoom(room)}
                             />
                         ))}
                     </div>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex flex-wrap justify-center items-center gap-2 mt-12">
                             <button
@@ -371,9 +346,7 @@ const RoomsPage = () => {
                                 «
                             </button>
                             <button
-                                onClick={() =>
-                                    handlePageChange(currentPage - 1)
-                                }
+                                onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 0}
                                 className={`px-3 py-2 rounded-lg transition-colors duration-200 ${
                                     currentPage === 0
@@ -387,9 +360,7 @@ const RoomsPage = () => {
                             {getPageNumbers().map((pageNumber) => (
                                 <button
                                     key={pageNumber}
-                                    onClick={() =>
-                                        handlePageChange(pageNumber)
-                                    }
+                                    onClick={() => handlePageChange(pageNumber)}
                                     className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
                                         currentPage === pageNumber
                                             ? "bg-rose-600 text-white font-medium shadow"
@@ -399,11 +370,9 @@ const RoomsPage = () => {
                                     {pageNumber + 1}
                                 </button>
                             ))}
-                            
+
                             <button
-                                onClick={() =>
-                                    handlePageChange(currentPage + 1)
-                                }
+                                onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages - 1}
                                 className={`px-3 py-2 rounded-lg transition-colors duration-200 ${
                                     currentPage === totalPages - 1
@@ -413,11 +382,8 @@ const RoomsPage = () => {
                             >
                                 ›
                             </button>
-
                             <button
-                                onClick={() =>
-                                    handlePageChange(totalPages - 1)
-                                }
+                                onClick={() => handlePageChange(totalPages - 1)}
                                 disabled={currentPage === totalPages - 1}
                                 className={`px-3 py-2 rounded-lg transition-colors duration-200 ${
                                     currentPage === totalPages - 1
@@ -448,4 +414,3 @@ const RoomsPage = () => {
 };
 
 export default RoomsPage;
-

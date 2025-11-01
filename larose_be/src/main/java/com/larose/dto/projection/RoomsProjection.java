@@ -14,13 +14,14 @@ public interface RoomsProjection {
     LocalDateTime getRoomUpdatedAt();
     String getRoomDescription();
 
-    // Type info
+    Integer getRoomCapacity();
+    String getRoomAmenities(); // ←←← CHỈ SỬA DÒNG NÀY
+
     Long getTypeId();
     String getTypeName();
     String getTypeShortDescription();
     BigDecimal getBasePrice();
 
-    // Image info
     Long getImageId();
     Boolean getImageIsPrimary();
     String getImageUrl();

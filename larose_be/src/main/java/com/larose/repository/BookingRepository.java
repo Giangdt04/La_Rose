@@ -26,8 +26,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @EntityGraph(attributePaths = {"room", "roomType", "user"})
     Page<Booking> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    // 👇 SỬA DÒNG NÀY: thêm ngoặc quanh điều kiện OR
     @EntityGraph(attributePaths = {"room", "roomType", "user"})
-    @Query("SELECT b FROM Booking b WHERE b.user.id = :userId AND (:#{#status}) IS NULL OR b.status = (:#{#status}) ORDER BY b.createdAt DESC")
+    @Query("SELECT b FROM Booking b WHERE b.user.id = :userId AND ((:#{#status}) IS NULL OR b.status = :#{#status}) ORDER BY b.createdAt DESC")
     Page<Booking> findByUserIdAndStatusOrderByCreatedAtDesc(@Param("userId") Long userId,
                                                             @Param("status") Booking.Status status,
                                                             Pageable pageable);
@@ -43,7 +44,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query(value = """
             select * from bookings order by bookings.id desc limit 1
-            """,nativeQuery = true)
+            """, nativeQuery = true)
     Booking getTop1();
 
     Optional<Booking> findByBookingCode(String code);
@@ -58,7 +59,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
               AND b.status = 'confirmed'
               AND t.status = 'success'
               AND b.created_at >= NOW() - INTERVAL 2 HOUR
-            """,nativeQuery = true)
+            """, nativeQuery = true)
     int setCancelledBooking(@Param("bookingId") Long id);
 
     @Query(value = """
@@ -73,7 +74,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query(value = """
             SELECT COALESCE(SUM(b.price_total), 0) AS total_revenue
                    FROM bookings b
-                   WHERE b.status = 'CONFIRMED'
+                   WHERE b.status = 'confirmed'
                    AND (:days IS NULL OR b.created_at >= DATE_SUB(NOW(), INTERVAL :days DAY))
             """, nativeQuery = true)
     BigDecimal sumTotalPrice(@Param("days") Integer days);
@@ -118,6 +119,29 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     """, nativeQuery = true)
     Page<BookingProjection> getAll(BookingSearchDto request, Pageable pageable);
 
-    Optional<Booking> findByRoomId(Long roomId);
+    @Query(value = """
+    	    SELECT DATE(b.created_at) AS date, COALESCE(SUM(b.price_total), 0) AS total
+    	    FROM bookings b
+    	    WHERE b.status = 'confirmed'
+    	      AND b.created_at >= DATE_SUB(NOW(), INTERVAL :days DAY)
+    	    GROUP BY DATE(b.created_at)
+    	    ORDER BY date ASC
+    	    """, nativeQuery = true)
+    List<Object[]> findDailyRevenue(@Param("days") Integer days);
 
+    @Query(value = """
+    	    SELECT 
+    	        YEARWEEK(b.created_at, 1) AS week,
+    	        MIN(DATE(b.created_at)) AS start_date,
+    	        MAX(DATE(b.created_at)) AS end_date,
+    	        COALESCE(SUM(b.price_total), 0) AS total
+    	    FROM bookings b
+    	    WHERE b.status = 'confirmed'
+    	      AND b.created_at >= DATE_SUB(NOW(), INTERVAL :weeks WEEK)
+    	    GROUP BY YEARWEEK(b.created_at, 1)
+    	    ORDER BY week ASC
+    	    """, nativeQuery = true)
+    List<Object[]> findWeeklyRevenue(@Param("weeks") Integer weeks);
+
+    Optional<Booking> findByRoomId(Long roomId);
 }

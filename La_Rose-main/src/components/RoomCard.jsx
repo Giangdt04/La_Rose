@@ -809,33 +809,7 @@ const parseAmenities = (amenities) => {
                                                     Sức chứa:
                                                 </span>
                                                 <span className="font-medium">
-                                                    {(() => {
-                                                        const typeName =
-                                                            room.roomType?.name?.toLowerCase() ||
-                                                            "";
-                                                        switch (typeName) {
-                                                            case "standard":
-                                                                return "2 người";
-                                                            case "deluxe":
-                                                                return "2 người";
-                                                            case "suite":
-                                                                return "3 người";
-                                                            case "family":
-                                                                return "4 người";
-                                                            case "executive":
-                                                                return "2 người";
-                                                            case "studio":
-                                                                return "2 người";
-                                                            case "apartment":
-                                                                return "4 người";
-                                                            case "accessible":
-                                                                return "2 người";
-                                                            case "honeymoon":
-                                                                return "2 người";
-                                                            default:
-                                                                return "2 người";
-                                                        }
-                                                    })()}
+                                                   {room.capacity || getEstimatedCapacity(room.roomType)} người
                                                 </span>
                                             </div>
                                         </div>

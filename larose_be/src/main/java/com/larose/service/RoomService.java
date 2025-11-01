@@ -1,5 +1,8 @@
 package com.larose.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.larose.dto.projection.RoomsProjection;
 import com.larose.dto.request.RoomRequest;
 import com.larose.dto.response.RoomImageResponse;
@@ -29,9 +32,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +44,9 @@ public class RoomService {
     RoomTypeRepository roomTypeRepository;
     RoomMapper roomMapper;
     FileUploadUtil fileUploadUtil;
+    
+    // 👇 Thêm ObjectMapper để parse JSON
+    ObjectMapper objectMapper = new ObjectMapper();
 
     public Page<RoomResponse> getRooms(@NonNull RoomSearchDto request) {
         Pageable pageable = PageRequest.of(request.getPageIndex(), request.getPageSize());
@@ -63,8 +67,22 @@ public class RoomService {
                         .build())
                 .collect(Collectors.groupingBy(RoomImageResponse::getRoomId));
 
+        // ✅ SỬA: Parse amenities từ String → Map trước khi tạo RoomResponse
         List<RoomResponse> responses = roomPage.stream()
-                .map(r -> RoomResponse.fromProjection(r, imagesMap.getOrDefault(r.getRoomId(), new ArrayList<>())))
+                .map(r -> {
+                    Map<String, Object> amenitiesMap = new HashMap<>();
+                    String amenitiesJson = r.getRoomAmenities();
+                    if (amenitiesJson != null && !amenitiesJson.trim().isEmpty()) {
+                        try {
+                            amenitiesMap = objectMapper.readValue(amenitiesJson, new TypeReference<Map<String, Object>>() {});
+                        } catch (JsonProcessingException e) {
+                            // Log cảnh báo nếu cần (có thể inject Logger)
+                            System.err.println("Failed to parse amenities JSON: " + amenitiesJson);
+                            // Giữ map rỗng thay vì ném exception
+                        }
+                    }
+                    return RoomResponse.fromProjection(r, amenitiesMap, imagesMap.getOrDefault(r.getRoomId(), new ArrayList<>()));
+                })
                 .toList();
 
         return new PageImpl<>(responses, pageable, roomPage.getTotalElements());
@@ -83,17 +101,10 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
-    // ✅ THÊM: Lấy phòng theo ID (dùng trong BookingService)
     public Room getRoomById(Long id) {
         return roomRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found with id: " + id));
     }
-
-    // ❌ (Tùy chọn) XÓA hoặc giữ lại nếu cần cho admin
-    // public Room getRoom(String code) {
-    //     return roomRepository.findByCode(code)
-    //             .orElseThrow(() -> new IllegalArgumentException("Room not found with code: " + code));
-    // }
 
     @Transactional
     public RoomResponse create(RoomRequest request, List<MultipartFile> images) {

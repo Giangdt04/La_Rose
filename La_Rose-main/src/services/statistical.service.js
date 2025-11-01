@@ -23,6 +23,20 @@ class StatisticalService {
     async getRevenue(days = 7) {
         return await this.httpService.get(`${this.basePath}/revenue?days=${days}`, { skipAuth: true });
     }
+
+    // === THÊM MỚI ===
+    async getDailyRevenue(days = 7) {
+        return await this.httpService.get(`${this.basePath}/revenue/daily?days=${days}`, { skipAuth: true });
+    }
+
+    async getWeeklyRevenue(weeks = 12) {
+        return await this.httpService.get(`${this.basePath}/revenue/weekly?weeks=${weeks}`, { skipAuth: true });
+    }
+
+    async getOccupancyRate(minDate, maxDate) {
+        const params = new URLSearchParams({ minDate, maxDate });
+        return await this.httpService.get(`${this.basePath}/occupancy-rate?${params.toString()}`, { skipAuth: true });
+    }
 }
 
 const statisticalService = new StatisticalService();

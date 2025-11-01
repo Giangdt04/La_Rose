@@ -10,4 +10,5 @@ public class RoomSearchDto extends SearchDto {
     private Double maxPrice;
     private Long typeId;
     private String keyword;
+    private Integer capacity; 
 }

@@ -42,7 +42,7 @@ public class Room {
     private String description;
 
     @Column(name = "capacity")
-    private Integer capacity = 1;
+    private Integer capacity;
 
     @Column(name = "price", precision = 10, scale = 2)
     private BigDecimal price = BigDecimal.ZERO;

@@ -1,3 +1,4 @@
+// /src/components/AddRoomModal.jsx
 import React, { useState, useEffect } from "react";
 import { X, Upload, Trash2, Loader } from "lucide-react";
 import roomService from "../../services/room.service";
@@ -22,7 +23,6 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // Fetch room types khi component mount
     useEffect(() => {
         const fetchRoomTypes = async () => {
             try {
@@ -42,25 +42,24 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
         const { name, value, type, checked } = e.target;
 
         if (name.startsWith("amenities.")) {
-            const amenityName = name.split(".")[1];
+            const amenityKey = name.split(".")[1];
             setFormData((prev) => ({
                 ...prev,
                 amenities: {
                     ...prev.amenities,
-                    [amenityName]: checked,
+                    [amenityKey]: checked,
                 },
             }));
         } else {
             setFormData((prev) => ({
                 ...prev,
-                [name]: type === "number" ? parseInt(value) || 0 : value,
+                [name]: type === "number" ? (value === "" ? 0 : parseInt(value)) : value,
             }));
         }
     };
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
-        // Xử lý upload ảnh ở đây (có thể cần gọi API upload)
         setImages((prev) => [...prev, ...files]);
     };
 
@@ -73,15 +72,22 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
         setLoading(true);
 
         try {
-            const success = await onAddRoom({
+            // Gửi amenities dưới dạng object thuần — BE sẽ tự JSON.stringify
+            const roomData = {
                 ...formData,
+                // Đảm bảo capacity và price là số
+                capacity: Number(formData.capacity),
+                price: Number(formData.price),
+                amenities: { ...formData.amenities }, // plain object
                 images: images,
-            });
+            };
+
+            const success = await onAddRoom(roomData);
 
             if (success) {
-                // Reset form
                 setFormData({
                     code: "",
+                    roomTypeId: "",
                     title: "",
                     description: "",
                     capacity: 1,
@@ -125,7 +131,6 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Loại phòng *
@@ -168,9 +173,9 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                 <input
                                     type="number"
                                     name="capacity"
+                                    min="1"
                                     value={formData.capacity}
                                     onChange={handleInputChange}
-                                    min="1"
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                                 />
@@ -203,9 +208,7 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                 >
                                     <option value="available">Có sẵn</option>
                                     <option value="maintenance">Bảo trì</option>
-                                    <option value="offline">
-                                        Đang dọn dẹp
-                                    </option>
+                                    <option value="offline">Đang dọn dẹp</option>
                                 </select>
                             </div>
                         </div>
@@ -224,7 +227,7 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                             />
                         </div>
 
-                        {/* Amenities Section */}
+                        {/* Amenities Section — ĐÃ CHUẨN */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Tiện nghi
@@ -238,9 +241,7 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                         onChange={handleInputChange}
                                         className="w-4 h-4 text-rose-500 rounded focus:ring-rose-500"
                                     />
-                                    <span className="text-sm text-gray-700">
-                                        WiFi
-                                    </span>
+                                    <span className="text-sm text-gray-700">WiFi</span>
                                 </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
                                     <input
@@ -250,23 +251,17 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                         onChange={handleInputChange}
                                         className="w-4 h-4 text-rose-500 rounded focus:ring-rose-500"
                                     />
-                                    <span className="text-sm text-gray-700">
-                                        TV
-                                    </span>
+                                    <span className="text-sm text-gray-700">TV</span>
                                 </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         name="amenities.air_conditioner"
-                                        checked={
-                                            formData.amenities.air_conditioner
-                                        }
+                                        checked={formData.amenities.air_conditioner}
                                         onChange={handleInputChange}
                                         className="w-4 h-4 text-rose-500 rounded focus:ring-rose-500"
                                     />
-                                    <span className="text-sm text-gray-700">
-                                        Điều hòa
-                                    </span>
+                                    <span className="text-sm text-gray-700">Điều hòa</span>
                                 </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
                                     <input
@@ -276,14 +271,12 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                         onChange={handleInputChange}
                                         className="w-4 h-4 text-rose-500 rounded focus:ring-rose-500"
                                     />
-                                    <span className="text-sm text-gray-700">
-                                        Bồn tắm
-                                    </span>
+                                    <span className="text-sm text-gray-700">Bồn tắm</span>
                                 </label>
                             </div>
                         </div>
 
-                        {/* Image Upload Section */}
+                        {/* Image Upload */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Hình ảnh phòng
@@ -311,7 +304,6 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                 </label>
                             </div>
 
-                            {/* Image Preview */}
                             {images.length > 0 && (
                                 <div className="mt-4">
                                     <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -324,27 +316,17 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                                                 className="relative group rounded-lg overflow-hidden border border-gray-200"
                                             >
                                                 <img
-                                                    src={
-                                                        typeof image ===
-                                                        "string"
-                                                            ? image
-                                                            : URL.createObjectURL(
-                                                                  image,
-                                                              )
-                                                    }
+                                                    src={typeof image === "string" ? image : URL.createObjectURL(image)}
                                                     alt={`Room ${index + 1}`}
                                                     className="w-full h-24 object-cover"
                                                 />
                                                 <button
                                                     type="button"
-                                                    onClick={() =>
-                                                        removeImage(index)
-                                                    }
+                                                    onClick={() => removeImage(index)}
                                                     className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                                 >
                                                     <Trash2 className="w-3 h-3" />
                                                 </button>
-                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200" />
                                             </div>
                                         ))}
                                     </div>

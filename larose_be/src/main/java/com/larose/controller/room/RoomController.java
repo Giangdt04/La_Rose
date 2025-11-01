@@ -34,6 +34,7 @@ public class RoomController {
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Long typeId,
+            @RequestParam(required = false) Integer capacity,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
@@ -42,6 +43,7 @@ public class RoomController {
         searchDto.setMinPrice(minPrice);
         searchDto.setMaxPrice(maxPrice);
         searchDto.setTypeId(typeId);
+        searchDto.setCapacity(capacity); 
         searchDto.setPageIndex(page);
         searchDto.setPageSize(size);
 

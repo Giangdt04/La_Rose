@@ -1,3 +1,4 @@
+// src/services/room.service.js
 import HttpService from "./http.service";
 
 class RoomService {
@@ -6,48 +7,21 @@ class RoomService {
         this.basePath = "/api/rooms";
     }
 
-    /**
-     * ✅ SỬA LỖI LOGIC:
-     * Viết lại hoàn toàn hàm này để gửi đúng param (keyword, minPrice, v.v.)
-     * mà RoomsPage.jsx cung cấp và RoomController.java mong đợi.
-     */
     async getAllRooms(params = {}) {
         try {
             const queryParams = new URLSearchParams();
 
-            // 1. Thêm tham số phân trang
-            if (params.page !== undefined) {
-                queryParams.append("page", params.page);
-            }
-            if (params.size !== undefined) {
-                queryParams.append("size", params.size);
-            }
-
-            // 2. Thêm tham số filter (từ RoomsPage.jsx)
-            if (params.keyword) {
-                queryParams.append("keyword", params.keyword);
-            }
-            if (params.minPrice) {
-                queryParams.append("minPrice", params.minPrice);
-            }
-            if (params.maxPrice) {
-                queryParams.append("maxPrice", params.maxPrice);
-            }
-            if (params.typeId) {
-                queryParams.append("typeId", params.typeId);
-            }
-            
+            if (params.page !== undefined) queryParams.append("page", params.page);
+            if (params.size !== undefined) queryParams.append("size", params.size);
+            if (params.keyword) queryParams.append("keyword", params.keyword);
+            if (params.minPrice) queryParams.append("minPrice", params.minPrice);
+            if (params.maxPrice) queryParams.append("maxPrice", params.maxPrice);
+            if (params.typeId) queryParams.append("typeId", params.typeId);
+            if (params.capacity) queryParams.append("capacity", params.capacity);
             const queryString = queryParams.toString();
-            const url = queryString
-                ? `${this.basePath}?${queryString}`
-                : this.basePath;
+            const url = queryString ? `${this.basePath}?${queryString}` : this.basePath;
 
-            // Trang này công khai, nên thêm { skipAuth: true }
-            // (Nếu http.service.js của bạn không hỗ trợ, cứ bỏ 'config' đi)
-            const config = { skipAuth: true };
-            
-            return await this.httpService.get(url, config);
-
+            return await this.httpService.get(url, { skipAuth: true });
         } catch (error) {
             console.error("Error fetching rooms:", error);
             throw error;
@@ -56,64 +30,93 @@ class RoomService {
 
     async getRoomById(roomId) {
         try {
-            // Trang này công khai
-            const config = { skipAuth: true };
-            return await this.httpService.get(`${this.basePath}/${roomId}`, config);
+            return await this.httpService.get(`${this.basePath}/${roomId}`, { skipAuth: true });
         } catch (error) {
             console.error(`Error fetching room ${roomId}:`, error);
             throw error;
         }
     }
 
-    /**
-     * ✅ THÊM HÀM MỚI:
-     * Hàm này để lấy loại phòng cho bộ lọc (Dropdown)
-     * (RoomController của bạn đã có /api/rooms/types)
-     */
-    async getAllRoomTypes() {
+    async createRoom(roomData) {
         try {
-            // Trang này công khai
-            const config = { skipAuth: true };
-            return await this.httpService.get(`${this.basePath}/types`, config);
-        } catch (error) {
-            console.error("Error fetching room types:", error);
-            throw error;
-        }
-    }
-
-
-    // (Các hàm create/update/delete... ở dưới)
-    // ...
-    // (Bạn cần đính kèm token cho các hàm này)
-
-    async createRoom(formData) {
-        try {
-            // Ví dụ: hàm create cần token
-            return await this.httpService.post(this.basePath, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
+            return await this.httpService.post(this.basePath, roomData);
         } catch (error) {
             console.error("Error creating room:", error);
             throw error;
         }
     }
 
-    async updateRoom(roomCode, formData) {
+    async updateRoom(roomCode, roomData) {
         try {
-            // Ví dụ: hàm update cần token
-            return await this.httpService.put(`${this.basePath}/${roomCode}`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
+            return await this.httpService.put(`${this.basePath}/${roomCode}`, roomData);
         } catch (error) {
             console.error(`Error updating room ${roomCode}:`, error);
             throw error;
         }
     }
+
+    async delete(roomCode) {
+        try {
+            return await this.httpService.delete(`${this.basePath}/${roomCode}`);
+        } catch (error) {
+            console.error(`Error deleting room ${roomCode}:`, error);
+            throw error;
+        }
+    }
+
+    async searchRooms(params = {}) {
+        try {
+            const queryParams = new URLSearchParams();
+
+            Object.keys(params).forEach((key) => {
+                if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+                    queryParams.append(key, params[key]);
+                }
+            });
+
+            const queryString = queryParams.toString();
+            const url = queryString
+                ? `${this.basePath}/search?${queryString}`
+                : `${this.basePath}/search`;
+
+            return await this.httpService.get(url, { skipAuth: true });
+        } catch (error) {
+            console.error("Error searching rooms:", error);
+            throw error;
+        }
+    }
+
+    async getRoomImages(roomId) {
+        try {
+            const room = await this.getRoomById(roomId);
+            return room.images || [];
+        } catch (error) {
+            console.error(`Error fetching images for room ${roomId}:`, error);
+            throw error;
+        }
+    }
+
+    async getPrimaryRoomImage(roomId) {
+        try {
+            const images = await this.getRoomImages(roomId);
+            const primaryImage = images.find((img) => img.isPrimary);
+            return primaryImage ? primaryImage.url : images[0]?.url || null;
+        } catch (error) {
+            console.error(`Error fetching primary image for room ${roomId}:`, error);
+            throw error;
+        }
+    }
+    
+    async getAllRoomTypes() {
+        try {
+            return await this.httpService.get(`${this.basePath}/types`, { skipAuth: true });
+        } catch (error) {
+            console.error("Error fetching room types:", error);
+            throw error;
+        }
+    }
 }
 
+// ✅ KHỞI TẠO Ở CUỐI FILE — KHÔNG DÙNG roomService TRƯỚC DÒNG NÀY
 const roomService = new RoomService();
 export default roomService;

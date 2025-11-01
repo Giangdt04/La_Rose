@@ -1,3 +1,4 @@
+// src/components/RoomDetailModal.jsx
 import React from "react";
 
 const RoomDetailModal = ({ isOpen, onClose, room }) => {
@@ -15,7 +16,6 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
             available: "Trống",
             offline: "Đã đặt",
             maintenance: "Bảo trì",
-             
         };
         return statusMap[status] || status;
     };
@@ -29,6 +29,14 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
         };
         return statusClasses[status] || "bg-gray-100 text-gray-800";
     };
+
+    // ✅ amenities là object thuần từ BE → không cần parse
+    const amenities = room.amenities || {};
+
+    // ✅ capacity là số nguyên → hiển thị trực tiếp
+    const displayCapacity = room.capacity && room.capacity > 0 
+        ? `${room.capacity} người` 
+        : "2 người";
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -98,7 +106,7 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
                                     Loại phòng
                                 </label>
                                 <p className="text-gray-900">
-                                    {room.type?.name || "N/A"}
+                                    {room.roomType?.name || room.type?.name || "N/A"}
                                 </p>
                             </div>
 
@@ -115,9 +123,7 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Sức chứa
                                 </label>
-                                <p className="text-gray-900">
-                                    {room.capacity} người
-                                </p>
+                                <p className="text-gray-900">{displayCapacity}</p>
                             </div>
                         </div>
 
@@ -133,87 +139,53 @@ const RoomDetailModal = ({ isOpen, onClose, room }) => {
                             </div>
                         )}
 
-                        {/* Amenities */}
+                        {/* Amenities — HIỂN THỊ ĐÚNG TỪ CSDL */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Tiện nghi
                             </label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {room.amenities?.wifi && (
-                                    <div className="flex items-center space-x-2 text-green-600">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"
-                                            />
-                                        </svg>
-                                        <span className="text-sm">WiFi</span>
+                            {(() => {
+                                const hasAny = amenities.wifi || amenities.tv || amenities.air_conditioner || amenities.bathtub;
+                                if (!hasAny) {
+                                    return <p className="text-gray-500 text-sm">Không có tiện nghi.</p>;
+                                }
+                                return (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {amenities.wifi && (
+                                            <div className="flex items-center space-x-2 text-green-600">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                                </svg>
+                                                <span className="text-sm">WiFi</span>
+                                            </div>
+                                        )}
+                                        {amenities.tv && (
+                                            <div className="flex items-center space-x-2 text-green-600">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                                <span className="text-sm">TV</span>
+                                            </div>
+                                        )}
+                                        {amenities.air_conditioner && (
+                                            <div className="flex items-center space-x-2 text-green-600">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                                                </svg>
+                                                <span className="text-sm">Điều hòa</span>
+                                            </div>
+                                        )}
+                                        {amenities.bathtub && (
+                                            <div className="flex items-center space-x-2 text-green-600">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                                </svg>
+                                                <span className="text-sm">Bồn tắm</span>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {room.amenities?.tv && (
-                                    <div className="flex items-center space-x-2 text-green-600">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                            />
-                                        </svg>
-                                        <span className="text-sm">TV</span>
-                                    </div>
-                                )}
-                                {room.amenities?.air_conditioner && (
-                                    <div className="flex items-center space-x-2 text-green-600">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
-                                            />
-                                        </svg>
-                                        <span className="text-sm">
-                                            Điều hòa
-                                        </span>
-                                    </div>
-                                )}
-                                {room.amenities?.bathtub && (
-                                    <div className="flex items-center space-x-2 text-green-600">
-                                        <svg
-                                            className="w-5 h-5"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                                            />
-                                        </svg>
-                                        <span className="text-sm">Bồn tắm</span>
-                                    </div>
-                                )}
-                            </div>
+                                );
+                            })()}
                         </div>
 
                         {/* Images */}
