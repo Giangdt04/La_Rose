@@ -1,20 +1,153 @@
-import React from 'react';
+// /src/pages/HomePage.jsx
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
 import RoomCard from '../components/RoomCard';
 import ReviewCard from '../components/ReviewCard';
+import reviewService from '../services/review.service'; 
+import roomService from '../services/room.service'; 
+
+/**
+ * Component StarRating nội bộ để chọn sao.
+ */
+const StarRating = ({ rating, setRating }) => {
+  return (
+    <div className="flex justify-center text-3xl text-gray-300">
+      {[...Array(5)].map((_, index) => {
+        const starValue = index + 1;
+        return (
+          <span
+            key={starValue}
+            className={`cursor-pointer ${starValue <= rating ? 'text-yellow-400' : ''}`}
+            onClick={() => setRating(starValue)}
+            style={{ transition: 'color 0.2s' }}
+          >
+            &#9733;
+          </span>
+        );
+      })}
+    </div>
+  );
+};
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { rooms } = useData();
   
-  const featuredRooms = rooms.slice(0, 3); // Lấy 3 phòng đầu tiên làm nổi bật
-  
-  const reviews = [
-    { name: 'Anh Thư', comment: 'Khách sạn tuyệt vời! Phòng rất sạch sẽ và dịch vụ chu đáo. Tôi sẽ quay lại lần nữa.' },
-    { name: 'Mai Linh', comment: 'Thiết kế rất đẹp và sang trọng. Nhân viên thân thiện, nhiệt tình. Rất hài lòng!' },
-    { name: 'Hương Giang', comment: 'Kỳ nghỉ tuyệt vời với bạn bè. Phòng rộng rãi, view đẹp. Chắc chắn sẽ giới thiệu cho mọi người.' }
-  ];
+  const [featuredRooms, setFeaturedRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [error, setError] = useState(null); 
+
+  const [newReviewTitle, setNewReviewTitle] = useState('');
+  const [newReviewComment, setNewReviewComment] = useState('');
+  const [newReviewRating, setNewReviewRating] = useState(5); 
+
+  /**
+   * Hàm xử lý khi nhấn "Đặt ngay" – GIỐNG HỆT RoomsPage
+   */
+  const handleBookNowClick = (room) => {
+    const bookingData = {
+      roomId: room.id,
+      roomType: room.roomType?.name || room.title || "Không xác định",
+      roomNumber: room.code,
+      price: room.price || room.roomType?.basePrice || room.pricePerNight || 0,
+      roomTitle: room.title,
+      roomDescription: room.description,
+      roomArea: room.area,
+      roomCapacity: room.roomType?.maxGuests || room.capacity || 2,
+      roomImages: room.images,
+      status: room.status,
+    };
+
+    navigate("/booking", {
+      state: {
+        preFilledData: bookingData,
+        fromRoomPage: true,
+      },
+    });
+  };
+
+  /**
+   * Hàm chuyển đổi DTO từ backend sang cấu trúc mà <ReviewCard> mong đợi.
+   */
+  const formatReviewForCard = (dto) => {
+    return {
+      id: dto.id,
+      name: dto.userFullName || 'Khách ẩn danh', 
+      comment: dto.content,
+      rating: dto.rating,
+      title: dto.title
+    };
+  };
+
+  // Fetch 3 phòng nổi bật
+  useEffect(() => {
+    const fetchFeaturedRooms = async () => {
+      try {
+        setLoadingRooms(true);
+        const response = await roomService.getAllRooms({ page: 0, size: 3 });
+        setFeaturedRooms(response.content || []); 
+      } catch (err) {
+        console.error("Lỗi khi tải phòng nổi bật:", err);
+        setError("Không thể tải phòng nổi bật.");
+      } finally {
+        setLoadingRooms(false);
+      }
+    };
+    fetchFeaturedRooms();
+  }, []);
+
+  // Fetch reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoadingReviews(true);
+        const dtoList = await reviewService.getAllReviews();
+        const formattedReviews = dtoList.map(formatReviewForCard);
+        setReviews(formattedReviews);
+      } catch (err) {
+        console.error("Lỗi khi tải đánh giá:", err);
+        if (!error) { 
+            setError("Không thể tải danh sách đánh giá.");
+        }
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+    fetchReviews();
+  }, [error]); 
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault(); 
+    
+    if (!newReviewTitle.trim() || !newReviewComment.trim()) {
+      alert('Vui lòng nhập đầy đủ tiêu đề và nội dung đánh giá.');
+      return;
+    }
+
+    const reviewData = {
+      title: newReviewTitle,
+      content: newReviewComment,
+      rating: newReviewRating,
+    };
+
+    try {
+      const newReviewDTO = await reviewService.createReview(reviewData);
+      const formattedReview = formatReviewForCard(newReviewDTO);
+      setReviews([formattedReview, ...reviews]);
+      setNewReviewTitle('');
+      setNewReviewComment('');
+      setNewReviewRating(5);
+      setError(null);
+      alert('Gửi đánh giá thành công!');
+    } catch (err) {
+      console.error("Lỗi khi gửi đánh giá:", err);
+      const errorMessage = err.message || 'Bạn cần đăng nhập để thực hiện việc này.';
+      setError(`Gửi đánh giá thất bại: ${errorMessage}`);
+      alert(`Gửi đánh giá thất bại: ${errorMessage}`);
+    }
+  };
 
   return (
     <div>
@@ -39,23 +172,100 @@ const HomePage = () => {
       {/* Featured Rooms */}
       <section className="container mx-auto px-6 py-16">
         <h3 className="font-playfair text-4xl font-bold text-center text-rose-deep mb-12">Phòng nổi bật</h3>
-        <div className="grid md:grid-cols-3 gap-8">
-          {featuredRooms.map(room => (
-            <RoomCard key={room.id} room={room} />
-          ))}
-        </div>
+        
+        {loadingRooms ? (
+            <p className="text-center text-gray-600">Đang tải phòng...</p>
+        ) : error && featuredRooms.length === 0 ? (
+            <p className="text-center text-red-500">{error}</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-8">
+            {featuredRooms.map(room => (
+              <RoomCard 
+                key={room.id} 
+                room={room} 
+                primaryImageUrl={
+                  room.images?.find(img => img.isPrimary)?.url || room.images?.[0]?.url
+                }
+                onBookNow={() => handleBookNowClick(room)} 
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Reviews Section */}
       <section className="bg-white py-16">
         <div className="container mx-auto px-6">
           <h3 className="font-playfair text-4xl font-bold text-center text-rose-deep mb-12">Đánh giá của khách hàng</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {reviews.map((review, index) => (
-              <ReviewCard key={index} review={review} />
-            ))}
-          </div>
+          
+          {loadingReviews ? (
+            <p className="text-center text-gray-600">Đang tải đánh giá...</p>
+          ) : error && reviews.length === 0 ? (
+              <p className="text-center text-red-500">{error}</p>
+          ) : (
+            <>
+              {reviews.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500">Chưa có đánh giá nào được hiển thị.</p>
+              )}
+            </>
+          )}
         </div>
+      </section>
+
+      {/* New Review Form Section */}
+      <section className="container mx-auto px-6 py-16">
+        <h3 className="font-playfair text-4xl font-bold text-center text-rose-deep mb-12">Gửi phản hồi của bạn</h3>
+        <p className="text-center text-gray-600 mb-8 -mt-8">
+          Bạn cần <a href="/login" className="text-rose-500 hover:underline font-medium">đăng nhập</a> để gửi đánh giá.
+        </p>
+        
+        <form onSubmit={handleSubmitReview} className="max-w-xl mx-auto bg-gray-50 p-8 rounded-lg shadow-md">
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-3 text-center">Bạn đánh giá bao nhiêu sao?</label>
+            <StarRating rating={newReviewRating} setRating={setNewReviewRating} />
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">Tiêu đề đánh giá</label>
+            <input 
+              type="text" 
+              id="title"
+              value={newReviewTitle}
+              onChange={(e) => setNewReviewTitle(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-rose-300"
+              placeholder="Ví dụ: Kỳ nghỉ tuyệt vời!"
+              required
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label htmlFor="comment" className="block text-gray-700 text-sm font-bold mb-2">Nội dung đánh giá</label>
+            <textarea 
+              id="comment"
+              rows="5"
+              value={newReviewComment}
+              onChange={(e) => setNewReviewComment(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-rose-300"
+              placeholder="Cảm nhận của bạn về La Rosé..."
+              required
+            />
+          </div>
+
+          <div className="text-center">
+            <button 
+              type="submit"
+              className="bg-gradient-to-r from-pink-400 to-rose-500 text-white px-8 py-3 rounded-full text-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+            >
+              Gửi đánh giá
+            </button>
+          </div>
+        </form>
       </section>
     </div>
   );

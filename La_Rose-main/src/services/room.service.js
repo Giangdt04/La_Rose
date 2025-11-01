@@ -143,6 +143,15 @@ class RoomService {
             throw error;
         }
     }
+    async getAllRoomTypes() {
+    try {
+        // Gọi đúng endpoint public: /api/rooms/types
+        return await this.httpService.get(`${this.basePath}/types`);
+    } catch (error) {
+        console.error("Error fetching room types:", error);
+        throw error;
+    }
+}
 }
 
 const roomService = new RoomService();

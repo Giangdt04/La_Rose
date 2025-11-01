@@ -66,42 +66,42 @@ public class BookingService {
     public Page<BookingDTO> getAll(BookingSearchDto request) {
         Pageable pageable = PageRequest.of(request.getPageIndex() - 1, request.getPageSize());
 
-        Page<BookingProjection> bookings = bookingRepository.getAll(request,pageable);
+        Page<BookingProjection> bookings = bookingRepository.getAll(request, pageable);
 
         return bookings.map(bookingMapper::toBookingDTO);
     }
 
-    public List<BookingDTO> getBookingDateWithRoomId(Long roomId){
-        if (roomId == null){
+    public List<BookingDTO> getBookingDateWithRoomId(Long roomId) {
+        if (roomId == null) {
             return Collections.emptyList();
         }
         List<Booking> list = bookingRepository.getBookingDateWithRoomId(roomId);
-        if(CollectionUtils.isEmpty(list)){
+        if (CollectionUtils.isEmpty(list)) {
             return Collections.emptyList();
         }
         return list.stream().map(bookingMapper::toBookingDTO).collect(Collectors.toList());
     }
 
-    public BookingDTO getDetail(Long id){
+    public BookingDTO getDetail(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
         return convertToBookingDTO(booking);
     }
 
-
+    @Transactional
     public BookingDTO create(BookingDTO request) {
         Booking booking = bookingMapper.toBooking(request);
-
+        booking.setStatus(Booking.Status.confirmed); 
         this.genCode(booking);
 
         User user = userService.findByEmailAndActive(request.getUserEmail());
         if (user == null) {
             throw new IllegalArgumentException("Not existing user: " + request.getUserEmail());
         }
-
         booking.setUser(user);
 
-        Room room = roomService.getRoom(request.getRoomCode());
+        // ✅ SỬA: DÙNG roomId → GỌI roomService.getRoomById()
+        Room room = roomService.getRoomById(request.getRoomId());
         booking.setRoom(room);
         if (room.getRoomType() == null) {
             throw new IllegalArgumentException("Phòng không có loại phòng được gán.");
@@ -115,9 +115,10 @@ public class BookingService {
         return this.convertToBookingDTO(bookingRepository.save(booking));
     }
 
-    public BookingDTO update(Long id,BookingDTO request) {
+    @Transactional
+    public BookingDTO update(Long id, BookingDTO request) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Not Found Booking with id: " + request.getId()));
+                .orElseThrow(() -> new IllegalArgumentException("Not Found Booking with id: " + id));
 
         booking.setCheckIn(request.getCheckIn());
         booking.setCheckOut(request.getCheckOut());
@@ -126,15 +127,15 @@ public class BookingService {
 
         Room room = booking.getRoom();
 
-        if (!booking.getRoom().getCode().equals(request.getRoomCode())) {
-            room = roomService.getRoom(request.getRoomCode());
+        // ✅ SỬA: SO SÁNH roomId (Long) thay vì roomCode (String)
+        if (!booking.getRoom().getId().equals(request.getRoomId())) {
+            room = roomService.getRoomById(request.getRoomId());
             booking.setRoom(room);
         }
 
         if (room.getRoomType() == null) {
             throw new IllegalArgumentException("Phòng không có loại phòng được gán.");
         }
-
         booking.setRoomType(room.getRoomType());
 
         BigDecimal total = room.getRoomType().getBasePrice()
@@ -144,15 +145,13 @@ public class BookingService {
         return this.convertToBookingDTO(bookingRepository.save(booking));
     }
 
-
+    @Transactional
     public void delete(Long id) {
         Booking delete = bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Not Found Booking with id: " + id));
         delete.setStatus(Booking.Status.no_show);
         bookingRepository.save(delete);
     }
-
-
 
     @Transactional
     public void cancelBooking(Long bookingId) {
@@ -242,7 +241,6 @@ public class BookingService {
         // Thông tin phòng
         if (booking.getRoom() != null) {
             dto.setRoomId(booking.getRoom().getId());
-            dto.setRoomCode(booking.getRoom().getCode());
             dto.setRoomTitle(booking.getRoom().getTitle());
         }
 

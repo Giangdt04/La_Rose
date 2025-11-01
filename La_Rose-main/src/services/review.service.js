@@ -1,4 +1,5 @@
-// services/review.service.js
+// /src/services/review.service.js
+
 import HttpService from "./http.service";
 
 class ReviewService {
@@ -7,7 +8,7 @@ class ReviewService {
         this.basePath = "/api/reviews";
     }
 
-    // Tạo đánh giá
+    // Tạo đánh giá (Dùng cho HomePage.jsx - Đã OK)
     async createReview(reviewData) {
         try {
             return await this.httpService.post(this.basePath, reviewData);
@@ -17,9 +18,37 @@ class ReviewService {
         }
     }
 
-    // Phản hồi đánh giá
+    // --- PHẦN MỚI ĐƯỢC THÊM ---
+    /**
+     * Cập nhật đánh giá (Update).
+     * Đây là hàm gọi PUT /api/reviews và gây ra lỗi nếu reviewData không có 'id'.
+     */
+    async updateReview(reviewData) {
+        try {
+            // reviewData BẮT BUỘC phải chứa "id"
+            if (!reviewData.id) {
+                throw new Error("ID của đánh giá là bắt buộc khi cập nhật.");
+            }
+            return await this.httpService.put(this.basePath, reviewData);
+        } catch (error) {
+            console.error("Error updating review:", error);
+            throw error;
+        }
+    }
+    // --- KẾT THÚC PHẦN MỚI ---
+
+    // Phản hồi đánh giá (Dành cho Admin - PUT /api/reviews/response)
     async respondToReview(responseData) {
         try {
+            // responseData cũng BẮT BUỘC phải chứa "id" (của response)
+            // nếu không cũng sẽ gây lỗi "IllegalArgumentException"
+            // từ ReviewResponseService
+            if (!responseData.id) {
+                 // Hoặc nếu bạn dùng để tạo mới thì phải có reviewId
+                 if (!responseData.reviewId) {
+                    throw new Error("ID của đánh giá (reviewId) là bắt buộc khi phản hồi.");
+                 }
+            }
             return await this.httpService.put(
                 `${this.basePath}/response`,
                 responseData,
@@ -42,7 +71,7 @@ class ReviewService {
         }
     }
 
-    // Lấy tất cả đánh giá
+    // Lấy tất cả đánh giá (Dùng cho HomePage.jsx - Đã OK)
     async getAllReviews(params = {}) {
         try {
             const queryParams = new URLSearchParams();

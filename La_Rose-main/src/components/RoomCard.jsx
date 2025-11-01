@@ -240,14 +240,14 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
     // Kiểm tra xem phòng có ảnh không
     const hasImages = room.images && room.images.length > 0;
     const displayImageUrl = primaryImageUrl || "/default-room-image.jpg";
-    const gradientClass = getRoomGradient(room.type);
+    const gradientClass = getRoomGradient(room.roomType);
 
     const statusInfo = getStatusInfo(room.status);
 
-    // Xử lý click nút đặt phòng
+    // Xử lý click nút đặt phòng - luôn cho phép vì filtered available
     const handleBookClick = (e) => {
         e.preventDefault();
-        if (room.status === "available" && onBookNow) {
+        if (onBookNow) {
             onBookNow(room);
         }
     };
@@ -305,7 +305,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
             );
         }
 
-        // Diện tích (ước tính dựa trên loại phòng)
+        // Diện tích (ước tính dựa trên loại phòng nếu không có từ DB)
         const getEstimatedArea = (roomType) => {
             const typeName = roomType?.name?.toLowerCase() || "";
             switch (typeName) {
@@ -350,11 +350,11 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                         d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"
                     />
                 </svg>
-                <span>Diện tích: {getEstimatedArea(room.type)} m²</span>
+                <span>Diện tích: {room.area || getEstimatedArea(room.roomType)} m²</span>
             </div>,
         );
 
-        // Sức chứa (ước tính)
+        // Sức chứa (ước tính nếu không có từ DB)
         const getEstimatedCapacity = (roomType) => {
             const typeName = roomType?.name?.toLowerCase() || "";
             switch (typeName) {
@@ -396,10 +396,10 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a2 2 0 11-4 0 2 2 0 014 0z"
                     />
                 </svg>
-                <span>Sức chứa: {getEstimatedCapacity(room.type)} người</span>
+                <span>Sức chứa: {room.capacity || getEstimatedCapacity(room.roomType)} người</span>
             </div>,
         );
 
@@ -425,7 +425,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                         >
                             <div className="text-center text-gray-600">
                                 <div className="w-16 h-16 mx-auto mb-3 bg-white/50 rounded-full flex items-center justify-center">
-                                    {getRoomTypeIcon(room.type)}
+                                    {getRoomTypeIcon(room.roomType)}
                                 </div>
                                 <p className="text-sm font-medium">
                                     Không có ảnh
@@ -450,11 +450,11 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                     </div>
 
                     {/* Room Type Badge với Icon */}
-                    {room.type?.name && (
+                    {room.roomType?.name && (
                         <div className="absolute top-3 left-3">
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/90 text-gray-700 border border-gray-300 flex items-center gap-1">
-                                {getRoomTypeIcon(room.type)}
-                                {room.type.name}
+                                {getRoomTypeIcon(room.roomType)}
+                                {room.roomType.name}
                             </span>
                         </div>
                     )}
@@ -468,9 +468,9 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                     </h3>
 
                     {/* Mô tả ngắn từ type */}
-                    {room.type?.shortDescription && (
+                    {room.roomType?.shortDescription && (
                         <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                            {room.type.shortDescription}
+                            {room.roomType.shortDescription}
                         </p>
                     )}
 
@@ -526,36 +526,29 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                             {/* Nút Đặt phòng */}
                             <button
                                 onClick={handleBookClick}
-                                disabled={room.status !== "available"}
-                                className="bg-rose-600 text-white py-2 px-4 rounded-lg hover:bg-rose-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                                className="bg-rose-600 text-white py-2 px-4 rounded-lg hover:bg-rose-700 transition-colors duration-200 font-medium flex items-center gap-2 text-sm"
                             >
-                                {room.status === "available" ? (
-                                    <>
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                            />
-                                        </svg>
-                                        Đặt ngay
-                                    </>
-                                ) : (
-                                    "Đã đặt"
-                                )}
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                    />
+                                </svg>
+                                Đặt ngay
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Popup Chi tiết phòng */}
+            {/* Detail Popup */}
             {showDetailPopup && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -567,7 +560,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                         {room.title || "Chi tiết phòng"}
                                     </h3>
                                     <p className="text-gray-600 mt-1">
-                                        {room.type?.name} • Mã: {room.code}
+                                        {room.roomType?.name} • Mã: {room.code}
                                     </p>
                                 </div>
                                 <button
@@ -707,7 +700,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                     >
                                         <div className="text-center text-gray-600">
                                             <div className="w-20 h-20 mx-auto mb-4 bg-white/50 rounded-full flex items-center justify-center">
-                                                {getRoomTypeIcon(room.type)}
+                                                {getRoomTypeIcon(room.roomType)}
                                             </div>
                                             <p className="text-lg font-medium">
                                                 Không có ảnh
@@ -733,7 +726,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                                     Loại phòng:
                                                 </span>
                                                 <span className="font-medium">
-                                                    {room.type?.name}
+                                                    {room.roomType?.name}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
@@ -761,7 +754,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                                 <span className="font-medium">
                                                     {(() => {
                                                         const typeName =
-                                                            room.type?.name?.toLowerCase() ||
+                                                            room.roomType?.name?.toLowerCase() ||
                                                             "";
                                                         switch (typeName) {
                                                             case "standard":
@@ -795,7 +788,7 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                                 <span className="font-medium">
                                                     {(() => {
                                                         const typeName =
-                                                            room.type?.name?.toLowerCase() ||
+                                                            room.roomType?.name?.toLowerCase() ||
                                                             "";
                                                         switch (typeName) {
                                                             case "standard":
@@ -845,13 +838,13 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                         </div>
                                     </div>
 
-                                    {room.type?.shortDescription && (
+                                    {room.roomType?.shortDescription && (
                                         <div>
                                             <h4 className="font-semibold text-gray-900 mb-2">
                                                 Mô tả
                                             </h4>
                                             <p className="text-gray-600 text-sm">
-                                                {room.type.shortDescription}
+                                                {room.roomType.shortDescription}
                                             </p>
                                         </div>
                                     )}
@@ -870,109 +863,35 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                 </div>
                             )}
 
-                            {/* Tiện nghi (mẫu) */}
+                            {/* Tiện nghi (từ DB, giả sử room.amenities là array [{name: 'WiFi'}, ...]) */}
                             <div className="mb-6">
                                 <h4 className="font-semibold text-gray-900 mb-3">
                                     Tiện nghi phòng
                                 </h4>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <svg
-                                            className="w-4 h-4 text-green-500"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                        WiFi miễn phí
+                                {room.amenities && room.amenities.length > 0 ? (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                                        {room.amenities.map((amenity, index) => (
+                                            <div key={index} className="flex items-center gap-2 text-gray-600">
+                                                <svg
+                                                    className="w-4 h-4 text-green-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                                {amenity.name}
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <svg
-                                            className="w-4 h-4 text-green-500"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                        Điều hòa
-                                    </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <svg
-                                            className="w-4 h-4 text-green-500"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                        TV màn hình phẳng
-                                    </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <svg
-                                            className="w-4 h-4 text-green-500"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                        Mini bar
-                                    </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <svg
-                                            className="w-4 h-4 text-green-500"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                        Phòng tắm riêng
-                                    </div>
-                                    <div className="flex items-center gap-2 text-gray-600">
-                                        <svg
-                                            className="w-4 h-4 text-green-500"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5 13l4 4L19 7"
-                                            />
-                                        </svg>
-                                        Bồn tắm/Vòi sen
-                                    </div>
-                                </div>
+                                ) : (
+                                    <p className="text-gray-600 text-sm">Không có thông tin tiện nghi.</p>
+                                )}
                             </div>
 
                             {/* Footer với nút hành động */}
@@ -988,12 +907,9 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                         setShowDetailPopup(false);
                                         handleBookClick(e);
                                     }}
-                                    disabled={room.status !== "available"}
-                                    className="flex-1 bg-rose-600 text-white py-3 px-6 rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 bg-rose-600 text-white py-3 px-6 rounded-lg hover:bg-rose-700 transition-colors font-medium"
                                 >
-                                    {room.status === "available"
-                                        ? "Đặt Phòng Ngay"
-                                        : "Đã Được Đặt"}
+                                    Đặt Phòng Ngay
                                 </button>
                             </div>
                         </div>

@@ -30,7 +30,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,19 +39,13 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomService {
     RoomRepository roomRepository;
-
     RoomImageRepository roomImageRepository;
-
     RoomTypeRepository roomTypeRepository;
-
     RoomMapper roomMapper;
-
     FileUploadUtil fileUploadUtil;
 
     public Page<RoomResponse> getRooms(@NonNull RoomSearchDto request) {
-
-        Pageable pageable = PageRequest.of(request.getPageIndex() , request.getPageSize());
-
+        Pageable pageable = PageRequest.of(request.getPageIndex(), request.getPageSize());
         Page<RoomsProjection> roomPage = roomRepository.getRooms(request, pageable);
 
         List<Long> roomIds = roomPage.stream()
@@ -70,7 +63,6 @@ public class RoomService {
                         .build())
                 .collect(Collectors.groupingBy(RoomImageResponse::getRoomId));
 
-
         List<RoomResponse> responses = roomPage.stream()
                 .map(r -> RoomResponse.fromProjection(r, imagesMap.getOrDefault(r.getRoomId(), new ArrayList<>())))
                 .toList();
@@ -78,7 +70,7 @@ public class RoomService {
         return new PageImpl<>(responses, pageable, roomPage.getTotalElements());
     }
 
-    public RoomResponse findById(Long id){
+    public RoomResponse findById(Long id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Not found room with id: " + id));
         return roomMapper.toResponse(room);
@@ -91,18 +83,23 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
-    public Room getRoom(String code) {
-        return roomRepository.findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found with code: " + code));
-
+    // ✅ THÊM: Lấy phòng theo ID (dùng trong BookingService)
+    public Room getRoomById(Long id) {
+        return roomRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found with id: " + id));
     }
 
+    // ❌ (Tùy chọn) XÓA hoặc giữ lại nếu cần cho admin
+    // public Room getRoom(String code) {
+    //     return roomRepository.findByCode(code)
+    //             .orElseThrow(() -> new IllegalArgumentException("Room not found with code: " + code));
+    // }
+
     @Transactional
-    public RoomResponse create(RoomRequest request, List<MultipartFile> images){
+    public RoomResponse create(RoomRequest request, List<MultipartFile> images) {
         Room room = roomMapper.toEntity(request);
 
         Room genCode = roomRepository.getTop1();
-
         if (genCode == null) {
             room.setCode("RM1");
         } else {
@@ -113,16 +110,14 @@ public class RoomService {
         RoomType roomType = roomTypeRepository.findById(request.getRoomTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Room type not found with id: " + request.getRoomTypeId()));
         room.setRoomType(roomType);
-
         room = roomRepository.save(room);
 
         uploadImagesAsync(room, images, null);
-
         return roomMapper.toResponse(room);
     }
 
     @Transactional
-    public RoomResponse update(RoomRequest request, List<MultipartFile> images){
+    public RoomResponse update(RoomRequest request, List<MultipartFile> images) {
         Room room = roomRepository.findByCode(request.getCode())
                 .orElseThrow(() -> new IllegalArgumentException("Room not found with code: " + request.getCode()));
 
@@ -131,35 +126,31 @@ public class RoomService {
         RoomType roomType = roomTypeRepository.findById(request.getRoomTypeId())
                 .orElseThrow(() -> new IllegalArgumentException("Room type not found with id: " + request.getRoomTypeId()));
         room.setRoomType(roomType);
-        if(!CollectionUtils.isEmpty(request.getDeleteImages())){
+
+        if (!CollectionUtils.isEmpty(request.getDeleteImages())) {
             List<RoomImage> deleteList = roomImageRepository.findAllByIdIn(request.getDeleteImages());
-            for(RoomImage deletes : deleteList){
+            for (RoomImage deletes : deleteList) {
                 room.getImages().remove(deletes);
-                if(deletes.getIsPrimary() && room.getImages().size() > 0){
+                if (deletes.getIsPrimary() && room.getImages().size() > 0) {
                     room.getImages().get(0).setIsPrimary(true);
                 }
             }
         }
         room = roomRepository.save(room);
-
         uploadImagesAsync(room, images, request.getDeleteImages());
-
         return roomMapper.toResponse(room);
     }
 
     public void delete(String code) {
         Room room = roomRepository.findByCode(code)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found with code: " + code));
-
         room.setDeletedAt(LocalDateTime.now());
         roomRepository.save(room);
     }
 
     @Async
-    public void uploadImagesAsync(Room room, List<MultipartFile> newImages, List<Long> deleteImageIds){
-
-
-        if(CollectionUtils.isEmpty(newImages)) return;
+    public void uploadImagesAsync(Room room, List<MultipartFile> newImages, List<Long> deleteImageIds) {
+        if (CollectionUtils.isEmpty(newImages)) return;
 
         List<RoomImage> existingImages = roomImageRepository.findByRoomId(room.getId());
         boolean hasPrimary = existingImages.stream().anyMatch(RoomImage::getIsPrimary);
@@ -167,17 +158,15 @@ public class RoomService {
         List<RoomImage> imgs = new ArrayList<>();
         for (int i = 0; i < newImages.size(); i++) {
             MultipartFile file = newImages.get(i);
-            if(file.isEmpty()) continue;
+            if (file.isEmpty()) continue;
 
             String url = fileUploadUtil.uploadFile(file);
-
             RoomImage img = new RoomImage();
             img.setRoom(room);
             img.setUrl(url);
-            img.setIsPrimary(!hasPrimary && i == 0); // ảnh đầu tiên nếu chưa có chính
+            img.setIsPrimary(!hasPrimary && i == 0);
             imgs.add(img);
         }
-
         roomImageRepository.saveAll(imgs);
     }
 

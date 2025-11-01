@@ -1,3 +1,4 @@
+// ReviewController.java
 package com.larose.controller;
 
 import com.larose.dto.ReviewDTO;
@@ -12,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
@@ -19,6 +22,13 @@ import org.springframework.web.bind.annotation.*;
 public class ReviewController {
     private final ReviewService reviewService;
     private final ReviewResponseService reviewResponseService;
+
+    // Thêm endpoint GET để lấy all reviews (public)
+    @GetMapping
+    public ResponseEntity<List<ReviewDTO>> getAllReviews() {
+        List<ReviewDTO> reviews = reviewService.getAllReviews(); // Thêm method này vào service
+        return ResponseEntity.ok(reviews);
+    }
 
     @PostMapping("/response")
     public ResponseEntity<ResReviewResponse> createResponse(@Valid @RequestBody ReqReviewResponse reqReviewResponse, HttpServletRequest request) {

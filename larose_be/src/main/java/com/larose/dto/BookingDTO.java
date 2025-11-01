@@ -23,7 +23,6 @@ public class BookingDTO {
 
     // Thông tin phòng
     private Long roomId;
-    private String roomCode;
     private String roomTitle;
 
     // Thông tin loại phòng

@@ -1,6 +1,5 @@
-// http.service.js
+// /src/services/http.service.js
 import axios from "axios";
-import session from "../utils/SessionManager";
 
 class HttpService {
     constructor(baseURL) {
@@ -20,8 +19,10 @@ class HttpService {
         // Request interceptor
         this.instance.interceptors.request.use(
             (config) => {
-                const token = session.getToken();
-                if (token) {
+                // ✅ SỬA: Không thêm token nếu config.skipAuth = true
+                // (Cho các endpoint public như room-types, check-availability)
+                const token = localStorage.getItem("accessToken");
+                if (!config.skipAuth && token) {
                     config.headers.Authorization = `Bearer ${token}`;
                 }
                 return config;
@@ -38,7 +39,9 @@ class HttpService {
             },
             (error) => {
                 if (error.response?.status === 401) {
-                    session.clearToken();
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("refreshToken");
+                    localStorage.removeItem("userInfo");
                     window.location.href = "/login";
                 }
                 return Promise.reject(error);
@@ -46,37 +49,31 @@ class HttpService {
         );
     }
 
-    // GET method
     async get(url, config = {}) {
         const response = await this.instance.get(url, config);
         return response.data;
     }
 
-    // POST method
     async post(url, data = null, config = {}) {
         const response = await this.instance.post(url, data, config);
         return response.data;
     }
 
-    // PUT method
     async put(url, data = null, config = {}) {
         const response = await this.instance.put(url, data, config);
         return response.data;
     }
 
-    // PATCH method
     async patch(url, data = null, config = {}) {
         const response = await this.instance.patch(url, data, config);
         return response.data;
     }
 
-    // DELETE method
     async delete(url, config = {}) {
         const response = await this.instance.delete(url, config);
         return response.data;
     }
 
-    // Upload file method
     async upload(url, formData, config = {}) {
         const response = await this.instance.post(url, formData, {
             ...config,
@@ -87,22 +84,8 @@ class HttpService {
         return response.data;
     }
 
-    // Set authentication token
-    setAuthToken(token) {
-        this.instance.defaults.headers.common[
-            "Authorization"
-        ] = `Bearer ${token}`;
-    }
-
-    // Remove authentication token
-    removeAuthToken() {
-        delete this.instance.defaults.headers.common["Authorization"];
-    }
-
-    // Custom request method
-    async request(config) {
-        const response = await this.instance.request(config);
-        return response.data;
+    request(config) {
+        return this.instance.request(config);
     }
 }
 

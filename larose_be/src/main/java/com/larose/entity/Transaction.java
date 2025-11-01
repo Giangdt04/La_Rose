@@ -35,7 +35,6 @@ public class Transaction {
     @Column(name = "provider_transaction_id", length = 255)
     private String providerTransactionId;
 
-    // THAY ĐỔI: Double → BigDecimal
     @Column(name = "amount", precision = 12, scale = 2)
     private BigDecimal amount = BigDecimal.ZERO;
 
@@ -48,7 +47,7 @@ public class Transaction {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    private Type type = Type.payment;
+    private Type type = Type.PAYMENT; // <-- Sửa mặc định thành PAYMENT
 
     @Column(name = "metadata", columnDefinition = "JSON")
     private String metadata;
@@ -68,9 +67,10 @@ public class Transaction {
         REFUNDED
     }
 
+    // ✅ SỬA Ở ĐÂY: VIẾT HOA CÁC GIÁ TRỊ ENUM
     public enum Type {
-        payment,
-        refund,
-        payout
+        PAYMENT,
+        REFUND,
+        PAYOUT
     }
 }

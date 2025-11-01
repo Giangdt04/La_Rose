@@ -6,7 +6,6 @@ import {
     Settings,
     Heart,
     Calendar,
-    Bell,
     ChevronDown,
     Menu,
     X,
@@ -220,24 +219,6 @@ const Header = () => {
                                     className="relative"
                                     ref={notificationsRef}
                                 >
-                                    <button
-                                        onClick={() =>
-                                            setIsNotificationsOpen(
-                                                !isNotificationsOpen,
-                                            )
-                                        }
-                                        className="relative p-2 text-gray-600 hover:text-rose-600 transition-colors rounded-xl hover:bg-rose-50"
-                                    >
-                                        <Bell
-                                            size={20}
-                                            className="sm:w-5 sm:h-5"
-                                        />
-                                        {unreadCount > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-4 sm:h-4 bg-rose-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center border border-white">
-                                                {unreadCount}
-                                            </span>
-                                        )}
-                                    </button>
 
                                     {isNotificationsOpen && (
                                         <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-scale-in">
@@ -402,18 +383,7 @@ const Header = () => {
                                                             Thông tin tài khoản
                                                         </span>
                                                     </Link>
-                                                    <Link
-                                                        to="/favorites"
-                                                        className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-rose-50 transition-colors"
-                                                        onClick={() =>
-                                                            setIsUserMenuOpen(
-                                                                false,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Heart size={18} />
-                                                        <span>Yêu thích</span>
-                                                    </Link>
+                                            
                                                     <Link
                                                         to="/bookings"
                                                         className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-rose-50 transition-colors"
@@ -428,18 +398,7 @@ const Header = () => {
                                                             Lịch sử đặt phòng
                                                         </span>
                                                     </Link>
-                                                    <Link
-                                                        to="/settings"
-                                                        className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-rose-50 transition-colors"
-                                                        onClick={() =>
-                                                            setIsUserMenuOpen(
-                                                                false,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Settings size={18} />
-                                                        <span>Cài đặt</span>
-                                                    </Link>
+                                              
                                                 </div>
 
                                                 {/* Logout */}
@@ -675,18 +634,7 @@ const Header = () => {
                                                 Lịch sử đặt phòng
                                             </span>
                                         </Link>
-                                        <Link
-                                            to="/settings"
-                                            className="flex items-center space-x-3 py-3 px-4 text-gray-700 hover:bg-rose-50 transition-colors border-b border-gray-100"
-                                            onClick={() =>
-                                                setIsMobileMenuOpen(false)
-                                            }
-                                        >
-                                            <Settings size={18} />
-                                            <span className="text-sm">
-                                                Cài đặt
-                                            </span>
-                                        </Link>
+                                
                                         <button
                                             onClick={handleLogout}
                                             className="flex items-center space-x-3 w-full py-3 px-4 text-rose-600 hover:bg-rose-50 transition-colors"

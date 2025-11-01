@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
@@ -5,6 +6,9 @@ import { useMemo } from "react";
 import bookingService from "../services/booking.service";
 import session from "../utils/SessionManager";
 
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import vi from 'date-fns/locale/vi';  // Để hỗ trợ tiếng Việt (optional, nếu chưa có date-fns thì bỏ dòng này)
 const DEPOSIT_PERCENTAGE = 0.2; // Đặt cọc 20%
 
 // Hàm kiểm tra định dạng email
@@ -296,7 +300,6 @@ const VNPayCallbackHandler = ({ onSuccess, onError }) => {
                             vnp_OrderInfo ||
                             `BK${Date.now().toString().slice(-8)}`,
                         roomType: "Phòng Deluxe", // Có thể lấy từ localStorage hoặc context
-                        roomNumber: "001",
                         checkin: new Date().toISOString().split("T")[0],
                         checkout: new Date(Date.now() + 86400000)
                             .toISOString()
@@ -341,222 +344,364 @@ const VNPayCallbackHandler = ({ onSuccess, onError }) => {
 
 // Component chính cho trang đặt phòng
 const BookingPage = () => {
-    const { addBooking } = useData();
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    // ================================================================
+// BẮT ĐẦU PHẦN CODE LOGIC ĐÃ SỬA HOÀN CHỈNH
+// (Copy tất cả và thay thế cho phần tương ứng trong BookingPage.jsx)
+// ================================================================
 
-    // State quản lý luồng ứng dụng
-    const [step, setStep] = useState(1);
-    const [confirmedBookingInfo, setConfirmedBookingInfo] = useState(null);
-    const [errorMessage, setErrorMessage] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [currentUser, setCurrentUser] = useState(null);
-    const [isProcessingVNPayCallback, setIsProcessingVNPayCallback] =
-        useState(false);
+const { addBooking } = useData(); // (Giữ nguyên)
+const location = useLocation();
+const navigate = useNavigate();
+const [searchParams] = useSearchParams();
+const [currentUser, setCurrentUser] = useState(session.getUser());
 
-    // Kiểm tra nếu đang xử lý callback từ VNPay
-    useEffect(() => {
-        const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
-        if (vnp_ResponseCode) {
-            console.log("Detected VNPay callback, processing...");
-            setIsProcessingVNPayCallback(true);
+// State quản lý luồng
+const [step, setStep] = useState(1);
+const [confirmedBookingInfo, setConfirmedBookingInfo] = useState(null);
+const [errorMessage, setErrorMessage] = useState("");
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// --- SỬA LỖI 2: THÊM DÒNG NÀY VÀO ---
+const [isProcessingVNPayCallback, setIsProcessingVNPayCallback] =
+    useState(false);
+// --- KẾT THÚC SỬA LỖI 2 ---
+
+// State cho API
+const [roomTypes, setRoomTypes] = useState([]);
+const [bookedDates, setBookedDates] = useState([]);
+const [loadingRoomTypes, setLoadingRoomTypes] = useState(true);
+const [loadingBookedDates, setLoadingBookedDates] = useState(false);
+
+// Dữ liệu từ RoomsPage (nếu có)
+const preFilledData = location.state?.preFilledData;
+const fromRoomPage = location.state?.fromRoomPage;
+
+// Ngày mặc định
+const todayDate = new Date();
+// const tomorrowDate = new Date(todayDate); // <-- XÓA: Không cần nữa
+// tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+
+// --- SỬA 1: Tách 'initialBookingData' ra thành hằng số ---
+// (Dùng để reset form và khởi tạo state)
+const getInitialBookingData = () => ({
+    roomId: preFilledData?.roomId || "",
+    roomType: preFilledData?.roomType || "",
+    roomPrice: preFilledData?.price || 0,
+    roomCapacity: preFilledData?.roomCapacity || 1,
+    roomDescription: preFilledData?.roomDescription || "",
+    roomArea: preFilledData?.roomArea || "",
+    
+    // THÊM: Các trường string cho ngày tháng để gửi đi API
+    checkIn: "",
+    checkOut: "",
+    
+    guests: 1, // Sửa: Đổi 'quantity' thành 'guests'
+    name: currentUser?.fullName || "",
+    phone: currentUser?.phone || "",
+    email: currentUser?.email || "",
+    requests: "",
+
+    paymentMethod: "vnpay",
+    paymentOption: "full",
+});
+
+
+// State cho LỊCH (dùng đối tượng Date cho DatePicker)
+const [bookingDates, setBookingDates] = useState({
+    checkIn: null, // (Để null, DatePicker sẽ tự chọn)
+    checkOut: null,
+});
+
+// Khởi tạo dữ liệu đặt phòng (dùng hằng số ở trên)
+const [bookingData, setBookingData] = useState(getInitialBookingData());
+
+// --- XỬ LÝ CALLBACK VNPAY (Giữ nguyên) ---
+useEffect(() => {
+    const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");
+    if (vnp_ResponseCode) {
+        console.log("Detected VNPay callback, processing...");
+        setIsProcessingVNPayCallback(true); // <-- Dòng này cần state đã khai báo
+    }
+}, [searchParams]);
+
+// --- 1. LẤY LOẠI PHÒNG (Room Types) TỪ CSDL (Giữ nguyên) ---
+useEffect(() => {
+    const fetchRoomTypes = async () => {
+        try {
+            setLoadingRoomTypes(true);
+            const types = await bookingService.getAllRoomTypes();
+            setRoomTypes(types || []);
+            
+            if (!fromRoomPage && types && types.length > 0) {
+               // (Để người dùng tự chọn)
+            }
+
+        } catch (err) {
+            console.error("Lỗi khi tải loại phòng:", err);
+            setErrorMessage("Không thể tải danh sách loại phòng.");
+        } finally {
+            setLoadingRoomTypes(false);
         }
-    }, [searchParams]);
-
-    // Ngày mặc định
-    const todayDate = new Date();
-    const tomorrowDate = new Date(todayDate);
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-
-    const todayDefault = todayDate.toISOString().split("T")[0];
-    const tomorrowDefault = tomorrowDate.toISOString().split("T")[0];
-
-    // Dữ liệu từ RoomsPage (nếu có)
-    const preFilledData = location.state?.preFilledData;
-    const fromRoomPage = location.state?.fromRoomPage;
-
-    // Lấy thông tin user từ session
-    useEffect(() => {
-        const user = session.getUser();
-        if (user) {
-            setCurrentUser(user);
-            console.log("User info loaded from session:", user);
-        } else {
-            console.warn("No user found in session");
-        }
-    }, [navigate]);
-
-    // Khởi tạo dữ liệu đặt phòng với thông tin user
-    const initialBookingData = {
-        // Thông tin phòng
-        roomType: preFilledData?.roomType?.toLowerCase() || "deluxe",
-        roomId: preFilledData?.roomId || null,
-        roomTitle: preFilledData?.roomTitle || "",
-        roomNumber: preFilledData?.roomNumber || "",
-        roomDescription: preFilledData?.roomDescription || "",
-        roomArea: preFilledData?.roomArea || "",
-        roomCapacity: preFilledData?.roomCapacity || 2,
-        quantity: 1,
-
-        // Thời gian
-        checkin: todayDefault,
-        checkout: tomorrowDefault,
-
-        // Thông tin khách hàng - TỰ ĐỘNG ĐIỀN TỪ USER
-        name: "",
-        phone: "",
-        email: "",
-        requests: "",
-
-        // Thanh toán
-        paymentMethod: "vnpay",
-        paymentOption: "full",
     };
 
-    const [bookingData, setBookingData] = useState(initialBookingData);
+    if (!fromRoomPage) { 
+         fetchRoomTypes();
+    } else {
+        // Nếu đến từ RoomPage, chỉ cần 1 loại phòng
+      setRoomTypes([{
+    id: preFilledData.roomId,
+    name: preFilledData.roomType || "Phòng không xác định",
+    basePrice: preFilledData.price || preFilledData.roomType?.basePrice || 0,
+    maxGuests: preFilledData.roomCapacity || 1,
+    shortDescription: preFilledData.roomDescription || "",
+    area: preFilledData.roomArea || 0,
+  }]);
+        setLoadingRoomTypes(false);
+    }
+}, [fromRoomPage, preFilledData]);
 
-    // Cập nhật booking data khi user data thay đổi
-    useEffect(() => {
-        if (currentUser) {
-            setBookingData((prev) => ({
-                ...prev,
-                name: currentUser.fullName || "",
-                phone: currentUser.phone || "",
-                email: currentUser.email || "",
-            }));
+// --- 2. LẤY NGÀY ĐÃ ĐẶT KHI CHỌN PHÒNG (Giữ nguyên) ---
+useEffect(() => {
+    const fetchBookedDates = async () => {
+        if (!bookingData.roomId) {
+            setBookedDates([]);
+            return; 
         }
-    }, [currentUser]);
+        
+        try {
+            setLoadingBookedDates(true);
+            setErrorMessage("");
+            const bookings = await bookingService.getBookedDates(bookingData.roomId);
+            
+            const dates = [];
+            bookings.forEach(booking => {
+                let currentDate = new Date(booking.checkIn);
+                const endDate = new Date(booking.checkOut);
+                while (currentDate < endDate) { 
+                    dates.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            });
+            setBookedDates(dates);
 
-    const [totalPrice, setTotalPrice] = useState(0);
-
-    // Tính toán tổng tiền
-    useEffect(() => {
-        const { quantity, checkin, checkout } = bookingData;
-
-        let nights = 1;
-        if (checkin && checkout) {
-            const checkinDate = new Date(checkin);
-            const checkoutDate = new Date(checkout);
-            const diffTime = Math.abs(checkoutDate - checkinDate);
-            nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        } catch (err) {
+            console.error("Lỗi khi lấy ngày đã đặt:", err);
+            setErrorMessage("Không thể tải lịch của phòng này.");
+        } finally {
+            setLoadingBookedDates(false);
         }
-
-        const roomPrice = preFilledData?.price || 2500000; // Giá mặc định
-        setTotalPrice(roomPrice * quantity * nights);
-    }, [
-        bookingData.roomType,
-        bookingData.quantity,
-        bookingData.checkin,
-        bookingData.checkout,
-        preFilledData,
-    ]);
-
-    // Tính toán các khoản thanh toán
-    const { depositAmount, remainingAmount, amountToPay } = useMemo(() => {
-        const calculatedDepositAmount = Math.round(
-            totalPrice * DEPOSIT_PERCENTAGE,
-        );
-        const calculatedRemainingAmount = totalPrice - calculatedDepositAmount;
-
-        const finalAmountToPay =
-            bookingData.paymentOption === "full"
-                ? totalPrice
-                : calculatedDepositAmount;
-
-        return {
-            depositAmount: calculatedDepositAmount,
-            remainingAmount: calculatedRemainingAmount,
-            amountToPay: finalAmountToPay,
-        };
-    }, [totalPrice, bookingData.paymentOption]);
-
-    // Xử lý thay đổi form
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setBookingData((prev) => ({ ...prev, [name]: value }));
-        setErrorMessage("");
     };
 
-    // Validation cho từng bước
-    const validateStep1 = () => {
-        if (!bookingData.checkin || !bookingData.checkout) {
-            return "Vui lòng chọn ngày nhận và trả phòng.";
-        }
+    fetchBookedDates();
+}, [bookingData.roomId]); // Chạy lại mỗi khi đổi phòng
 
-        const checkinDate = new Date(bookingData.checkin);
-        const checkoutDate = new Date(bookingData.checkout);
 
-        if (checkinDate >= checkoutDate) {
-            return "Ngày trả phòng phải sau ngày nhận phòng.";
-        }
-
-        if (checkinDate < new Date().setHours(0, 0, 0, 0)) {
-            return "Ngày nhận phòng không thể là ngày trong quá khứ.";
-        }
-
-        return null;
+// --- THÊM: useEffect ĐỂ ĐỒNG BỘ LỊCH (Date) VÀO bookingData (String) ---
+useEffect(() => {
+    // Hàm helper để format YYYY-MM-DD (hoặc format API của bạn cần)
+    const formatDateForAPI = (date) => {
+        if (!date) return "";
+        // Ví dụ: "2023-10-31"
+        return date.toISOString().split('T')[0]; 
     };
 
-    const validateStep2 = () => {
-        if (!bookingData.name.trim()) {
-            return "Vui lòng nhập họ và tên.";
+    setBookingData(prev => ({
+        ...prev,
+        // Cập nhật các trường string
+        checkIn: formatDateForAPI(bookingDates.checkIn),
+        checkOut: formatDateForAPI(bookingDates.checkOut),
+    }));
+}, [bookingDates.checkIn, bookingDates.checkOut]); // Chạy mỗi khi Date object thay đổi
+
+
+// Tính toán tổng tiền (Giữ nguyên - dùng bookingDates là đúng)
+const { nights, totalPrice, depositAmount, remainingAmount, amountToPay } = useMemo(() => {
+    let nights = 0;
+    if (bookingDates.checkIn && bookingDates.checkOut) {
+        const checkinDate = new Date(bookingDates.checkIn);
+        const checkoutDate = new Date(bookingDates.checkOut);
+        const diffTime = Math.abs(checkoutDate - checkinDate);
+        nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    }
+
+    const calculatedTotalPrice = (bookingData.roomPrice || 0) * nights;
+    const calculatedDepositAmount = Math.round(calculatedTotalPrice * DEPOSIT_PERCENTAGE);
+    const calculatedRemainingAmount = calculatedTotalPrice - calculatedDepositAmount;
+    const finalAmountToPay = bookingData.paymentOption === "full"
+        ? calculatedTotalPrice
+        : calculatedDepositAmount;
+
+    return { nights, totalPrice: calculatedTotalPrice, depositAmount: calculatedDepositAmount, remainingAmount: calculatedRemainingAmount, amountToPay: finalAmountToPay };
+}, [bookingDates.checkIn, bookingDates.checkOut, bookingData.roomPrice, bookingData.paymentOption]);
+
+// Helper: Cập nhật state khi chọn loại phòng (Giữ nguyên)
+const updateBookingDataForRoomType = (selectedType) => {
+     if (selectedType) {
+        setBookingData(prev => ({
+            ...prev,
+            roomId: selectedType.id, // Sửa: Dùng roomId = id
+            roomType: selectedType.name,
+            roomPrice: selectedType.basePrice,
+            roomCapacity: selectedType.maxGuests || 1,
+            roomDescription: selectedType.shortDescription || "",
+            roomArea: selectedType.area || "", // (Cần thêm 'area' vào RoomType DTO)
+            guests: 1, // Reset số khách
+        }));
+    } else {
+        setBookingData(prev => ({ ...prev, roomId: "", roomPrice: 0, roomCapacity: 1, guests: 1 }));
+    }
+};
+
+// Xử lý thay đổi form (input, select) (Giữ nguyên)
+const handleChange = (e) => {
+    const { name, value } = e.target;
+    setErrorMessage("");
+    setBookingData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "roomId") {
+        const selectedType = roomTypes.find(type => type.id.toString() === value);
+        updateBookingDataForRoomType(selectedType);
+    }
+};
+
+// --- SỬA: XÓA HÀM CŨ VÀ THÊM 3 HÀM MỚI ĐỂ XỬ LÝ LỊCH ---
+
+// XÓA: Hàm xử lý khi thay đổi LỊCH (CŨ)
+/*
+const handleDateChange = (dates) => {
+    const [start, end] = dates;
+    setBookingDates({
+        checkIn: start,
+        checkOut: end
+    });
+    setErrorMessage("");
+};
+*/
+
+// THÊM: Hàm xử lý MỚI cho Check-in
+const handleCheckInChange = (date) => {
+    setBookingDates(prev => {
+        // Nếu ngày check-in mới >= ngày check-out cũ, reset check-out
+        if (prev.checkOut && date && date >= prev.checkOut) {
+            return { checkIn: date, checkOut: null };
         }
+        return { ...prev, checkIn: date };
+    });
+    setErrorMessage("");
+};
 
-        if (!bookingData.phone.trim()) {
-            return "Vui lòng nhập số điện thoại.";
-        }
+// THÊM: Hàm xử lý MỚI cho Check-out
+const handleCheckOutChange = (date) => {
+    setBookingDates(prev => ({ ...prev, checkOut: date }));
+    setErrorMessage("");
+};
 
-        if (!isValidPhone(bookingData.phone)) {
-            return "Số điện thoại không hợp lệ. Vui lòng nhập 9-15 chữ số.";
-        }
+// THÊM: Tính toán minDate cho check-out (ngày trả phòng)
+const minCheckOutDate = useMemo(() => {
+    // Nếu chưa chọn check-in, thì min check-out là ngày mai
+    if (!bookingDates.checkIn) {
+        const nextDay = new Date(todayDate.getTime());
+        nextDay.setDate(nextDay.getDate() + 1);
+        return nextDay;
+    }
+    
+    // Nếu đã chọn check-in, min check-out là 1 ngày sau check-in
+    const nextDay = new Date(bookingDates.checkIn.getTime());
+    nextDay.setDate(nextDay.getDate() + 1);
+    return nextDay;
+}, [bookingDates.checkIn, todayDate]);
 
-        if (!bookingData.email.trim()) {
-            return "Vui lòng nhập địa chỉ email.";
-        }
 
-        if (!isValidEmail(bookingData.email)) {
-            return "Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.";
-        }
+// --- SỬA: Validation cho từng bước ---
+const validateStep1 = () => {
+    // SỬA: Kiểm tra bookingData.checkIn (chữ hoa) vì đây là string từ state
+    if (!bookingData.checkIn || !bookingData.checkOut) {
+        return "Vui lòng chọn ngày nhận và trả phòng.";
+    }
 
-        return null;
-    };
+    // SỬA: Dùng bookingData.checkIn (chữ hoa)
+    const checkinDate = new Date(bookingData.checkIn);
+    const checkoutDate = new Date(bookingData.checkOut);
 
-    // Chuyển bước tiếp theo
-    const nextStep = () => {
-        setErrorMessage("");
+    if (checkinDate >= checkoutDate) {
+        return "Ngày trả phòng phải sau ngày nhận phòng.";
+    }
 
-        let validationError = null;
+    if (checkinDate < new Date().setHours(0, 0, 0, 0)) {
+        return "Ngày nhận phòng không thể là ngày trong quá khứ.";
+    }
 
-        if (step === 1) {
-            validationError = validateStep1();
-        } else if (step === 2) {
-            validationError = validateStep2();
-        }
+    return null;
+};
 
-        if (validationError) {
-            setErrorMessage(validationError);
-            return;
-        }
+// (Giữ nguyên validateStep2)
+const validateStep2 = () => {
+    if (!bookingData.name.trim()) {
+        return "Vui lòng nhập họ và tên.";
+    }
 
-        setStep((s) => s + 1);
-    };
+    if (!bookingData.phone.trim()) {
+        return "Vui lòng nhập số điện thoại.";
+    }
 
-    // Quay lại bước trước
-    const prevStep = () => {
-        setErrorMessage("");
-        setStep((s) => s - 1);
-    };
+    if (!isValidPhone(bookingData.phone)) {
+        return "Số điện thoại không hợp lệ. Vui lòng nhập 9-15 chữ số.";
+    }
 
-    // Reset booking
-    const resetBooking = () => {
-        setConfirmedBookingInfo(null);
-        setBookingData(initialBookingData);
-        setStep(1);
-        setErrorMessage("");
-    };
+    if (!bookingData.email.trim()) {
+        return "Vui lòng nhập địa chỉ email.";
+    }
 
-    // Xử lý callback từ VNPay thành công
+    if (!isValidEmail(bookingData.email)) {
+        return "Địa chỉ email không hợp lệ. Vui lòng kiểm tra lại.";
+    }
+
+    return null;
+};
+
+// Chuyển bước tiếp theo (Giữ nguyên)
+const nextStep = () => {
+    setErrorMessage("");
+
+    let validationError = null;
+
+    if (step === 1) {
+        validationError = validateStep1();
+    } else if (step === 2) {
+        validationError = validateStep2();
+    }
+
+    if (validationError) {
+        setErrorMessage(validationError);
+        return;
+    }
+
+    setStep((s) => s + 1);
+};
+
+// Quay lại bước trước (Giữ nguyên)
+const prevStep = () => {
+    setErrorMessage("");
+    setStep((s) => s - 1);
+};
+
+// Reset booking (SỬA: Thêm reset cho bookingDates)
+const resetBooking = () => {
+    setConfirmedBookingInfo(null);
+    // SỬA: Dùng hằng số (đã cập nhật currentUser) để reset
+    setBookingData(getInitialBookingData()); 
+    // THÊM: Reset cả state của DatePicker
+    setBookingDates({ checkIn: null, checkOut: null });
+    setStep(1);
+    setErrorMessage("");
+};
+
+// ================================================================
+// KẾT THÚC PHẦN CODE LOGIC
+// (Bên dưới đây sẽ là phần 'return' của component)
+// ================================================================
+
+      // Xử lý callback từ VNPay thành công (Giữ nguyên)
     const handleVNPayCallbackSuccess = (bookingInfo) => {
         console.log("VNPay callback success:", bookingInfo);
         setConfirmedBookingInfo(bookingInfo);
@@ -566,14 +711,15 @@ const BookingPage = () => {
         addBooking(bookingInfo);
     };
 
-    // Xử lý callback từ VNPay thất bại
+    // Xử lý callback từ VNPay thất bại (Giữ nguyên)
     const handleVNPayCallbackError = (error) => {
         console.error("VNPay callback error:", error);
         setErrorMessage(error);
         setIsProcessingVNPayCallback(false);
     };
 
-    // Xử lý thanh toán VNPay
+    // Xử lý thanh toán VNPay (Giữ nguyên)
+    // (Hàm này ổn vì nó nhận 'bookingPayload' đã được sửa ở 'handleBookingSubmit')
     const handleVNPayPayment = async (bookingPayload) => {
         try {
             // Tạo orderInfo đơn giản, không có ký tự đặc biệt
@@ -638,12 +784,11 @@ const BookingPage = () => {
         }
     };
 
-    // Xử lý thanh toán tại quầy
+    // Xử lý thanh toán tại quầy (SỬA LẠI BIẾN)
     const handleCashPayment = async (bookingPayload) => {
         try {
             // Xác định trạng thái thanh toán
             let paymentStatus = "pending";
-            let transactionStatus = "PENDING";
 
             if (bookingData.paymentOption === "full") {
                 paymentStatus = "pending";
@@ -658,7 +803,6 @@ const BookingPage = () => {
                 providerTransactionId: `CASH${Date.now()}`,
                 amount: amountToPay,
                 currency: "VND",
-                status: transactionStatus,
                 type: "PAYMENT",
                 metadata: JSON.stringify({
                     note: `Payment at counter for booking ${bookingPayload.id}`,
@@ -667,26 +811,24 @@ const BookingPage = () => {
                     paymentOption: bookingData.paymentOption,
                     amountToPay: amountToPay,
                     totalPrice: totalPrice,
-                    checkin: bookingData.checkin,
-                    checkout: bookingData.checkout,
+                    // SỬA: Dùng checkIn và checkOut (camelCase)
+                    checkin: bookingData.checkIn,
+                    checkout: bookingData.checkOut,
                     userId: currentUser?.id,
                 }),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 bookingDTO: {
-                    roomCode: bookingPayload.roomNumber || "001",
                     userEmail: bookingData.email,
-                    checkIn: bookingData.checkin,
-                    checkOut: bookingData.checkout,
-                    nights: Math.ceil(
-                        (new Date(bookingData.checkout) -
-                            new Date(bookingData.checkin)) /
-                            (1000 * 60 * 60 * 24),
-                    ),
-                    guests: bookingData.roomCapacity || 2,
+                    // SỬA: Dùng checkIn và checkOut (camelCase)
+                    checkIn: bookingData.checkIn,
+                    checkOut: bookingData.checkOut,
+                    // SỬA: Dùng biến 'nights' từ useMemo
+                    nights: nights,
+                    // SỬA: Dùng bookingData.guests (số khách nhập)
+                    guests: bookingData.guests || 1, 
                     priceTotal: totalPrice,
                     depositAmount: depositAmount,
-                    status: paymentStatus,
                     roomId: bookingData.roomId || 1,
                     userId: currentUser?.id || 3,
                 },
@@ -711,7 +853,7 @@ const BookingPage = () => {
         }
     };
 
-    // Xử lý submit đặt phòng với API
+    // Xử lý submit đặt phòng với API (SỬA LẠI BIẾN)
     const handleBookingSubmit = async () => {
         setErrorMessage("");
         setIsSubmitting(true);
@@ -734,8 +876,9 @@ const BookingPage = () => {
                     isRoomAvailable =
                         await bookingService.checkRoomAvailability(
                             bookingData.roomId,
-                            bookingData.checkin,
-                            bookingData.checkout,
+                            // SỬA: Dùng checkIn và checkOut (camelCase)
+                            bookingData.checkIn,
+                            bookingData.checkOut,
                         );
                 }
             } catch (availabilityError) {
@@ -743,7 +886,7 @@ const BookingPage = () => {
                     "Không thể kiểm tra tính khả dụng phòng:",
                     availabilityError,
                 );
-                isRoomAvailable = true;
+                isRoomAvailable = true; // (Tạm thời bỏ qua nếu API lỗi)
             }
 
             if (!isRoomAvailable) {
@@ -782,12 +925,13 @@ const BookingPage = () => {
             const newBookingPayload = {
                 id: bookingId,
                 customer: bookingData.name.trim(),
-                roomType: preFilledData?.roomType || "Deluxe",
+                roomType: bookingData.roomType || preFilledData?.roomType || "Deluxe",
                 roomNumber: bookingData.roomNumber || "001",
                 roomId: bookingData.roomId || 1,
-                checkin: bookingData.checkin,
-                checkout: bookingData.checkout,
-                dates: `${bookingData.checkin} - ${bookingData.checkout}`,
+                // SỬA: Dùng checkIn và checkOut (camelCase)
+                checkin: bookingData.checkIn,
+                checkout: bookingData.checkOut,
+                dates: `${bookingData.checkIn} - ${bookingData.checkOut}`,
                 total: totalPrice,
                 amountPaid: amountPaid,
                 remainingDue: remainingDue,
@@ -798,14 +942,13 @@ const BookingPage = () => {
                 customerEmail: bookingData.email,
                 specialRequests: bookingData.requests,
                 bookingDate: new Date().toISOString().split("T")[0],
-                nights: Math.ceil(
-                    (new Date(bookingData.checkout) -
-                        new Date(bookingData.checkin)) /
-                        (1000 * 60 * 60 * 24),
-                ),
+                // SỬA: Dùng biến 'nights' từ useMemo
+                nights: nights,
+                // THÊM: Gửi số lượng khách
+                guests: bookingData.guests || 1,
                 roomTitle:
-                    bookingData.roomTitle ||
-                    preFilledData?.roomTitle ||
+                    bookingData.roomType || // Sửa: Dùng roomType
+                    preFilledData?.roomType ||
                     "Phòng Deluxe",
                 roomDescription:
                     bookingData.roomDescription ||
@@ -845,7 +988,7 @@ const BookingPage = () => {
                     checkout: newBookingPayload.checkout,
                     customer: newBookingPayload.customer,
                     amountPaid: newBookingPayload.amountPaid,
-                    amountToPay: amountToPay,
+                    amountToPay: amountToPay, // Dùng amountToPay (số tiền lẽ ra phải trả)
                     remainingDue: newBookingPayload.remainingDue,
                     paymentMethod: "cash",
                     paymentOption: newBookingPayload.paymentOption,
@@ -861,7 +1004,6 @@ const BookingPage = () => {
             setIsSubmitting(false);
         }
     };
-
     const today = new Date().toISOString().split("T")[0];
 
     // Hiển thị progress steps
@@ -1057,182 +1199,185 @@ const BookingPage = () => {
                             )}
 
                             {/* Step 1: Room Selection */}
-                            {step === 1 && (
-                                <div className="space-y-6">
-                                    <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                                        Chọn Phòng & Thời Gian
-                                    </h3>
-                                    <p className="text-gray-600 mb-6">
-                                        Lựa chọn loại phòng và thời gian lưu trú
-                                        phù hợp với nhu cầu của bạn
-                                    </p>
+                          {step === 1 && (
+    <div className="space-y-6">
+        <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+            Chọn Phòng & Thời Gian
+        </h3>
+        <p className="text-gray-600 mb-6">
+            Lựa chọn loại phòng và thời gian lưu trú
+            phù hợp với nhu cầu của bạn
+        </p>
 
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        {/* Loại phòng */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Loại phòng *
-                                            </label>
-                                            <select
-                                                name="roomType"
-                                                value={bookingData.roomType}
-                                                onChange={handleChange}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
-                                                disabled={fromRoomPage}
-                                            >
-                                                <option value="standard">
-                                                    Phòng Tiêu chuẩn -
-                                                    1,800,000₫/đêm
-                                                </option>
-                                                <option value="deluxe">
-                                                    Phòng Deluxe -
-                                                    2,500,000₫/đêm
-                                                </option>
-                                                <option value="honeymoon">
-                                                    Phòng Honeymoon -
-                                                    3,800,000₫/đêm
-                                                </option>
-                                                <option value="suite">
-                                                    Phòng Suite - 4,500,000₫/đêm
-                                                </option>
-                                            </select>
-                                            {fromRoomPage && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Loại phòng đã được chọn từ
-                                                    danh sách
-                                                </p>
-                                            )}
-                                        </div>
+        {/* Hiển thị lỗi chung */}
+        {errorMessage && (
+            <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+                {errorMessage}
+            </div>
+        )}
 
-                                        {/* Số lượng phòng */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Số lượng phòng *
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="quantity"
-                                                value={bookingData.quantity}
-                                                onChange={handleChange}
-                                                min="1"
-                                                max="5"
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
-                                            />
-                                        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+            {/* 1. Loại phòng (Giữ nguyên) */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Loại phòng *
+                </label>
+                <select
+                    name="roomId"
+                    value={bookingData.roomId}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors bg-white"
+                    disabled={fromRoomPage || loadingRoomTypes}
+                >
+                    <option value="">
+                        {loadingRoomTypes ? "Đang tải loại phòng..." : "Chọn loại phòng"}
+                    </option>
+                    
+                    {roomTypes.map((type) => (
+                        <option key={type.id} value={type.id}>
+                            {type.name} - {type.basePrice.toLocaleString()}₫/đêm
+                        </option>
+                    ))}
+                </select>
+                {fromRoomPage && (
+                    <p className="text-xs text-gray-500 mt-1">
+                        Loại phòng đã được chọn từ danh sách
+                    </p>
+                )}
+            </div>
 
-                                        {/* Ngày nhận phòng */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Ngày nhận phòng *
-                                            </label>
-                                            <input
-                                                type="date"
-                                                name="checkin"
-                                                value={bookingData.checkin}
-                                                onChange={handleChange}
-                                                min={today}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
-                                            />
-                                        </div>
+            {/* 2. Số lượng người (Giữ nguyên) */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Số lượng người *
+                </label>
+                <input
+                    type="number"
+                    name="guests"
+                    value={bookingData.guests}
+                    onChange={handleChange}
+                    min="1"
+                    max={bookingData.roomCapacity || 1}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
+                    disabled={!bookingData.roomId}
+                />
+            </div>
+        </div>
+        
+        {/* 3. SỬA: Tách riêng 2 ô chọn ngày (thay thế Lịch inline) */}
+        <div className="grid md:grid-cols-2 gap-6 relative">
+            
+            {/* Ngày nhận phòng */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày nhận phòng *
+                </label>
+                <DatePicker
+                    selected={bookingDates.checkIn}
+                    onChange={handleCheckInChange} // <-- DÙNG HÀM MỚI
+                    
+                    minDate={todayDate} // Không cho đặt quá khứ
+                    excludeDates={bookedDates} // Khóa ngày đã đặt
+                    
+                    placeholderText="Chọn ngày nhận phòng"
+                    dateFormat="dd/MM/yyyy"
+                    locale="vi"
+                    
+                    selectsStart
+                    startDate={bookingDates.checkIn}
+                    endDate={bookingDates.checkOut}
+                    
+                    disabled={!bookingData.roomId || loadingBookedDates} // Phải chọn phòng
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
+                    autoComplete="off"
+                />
+            </div>
+            
+            {/* Ngày trả phòng */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày trả phòng *
+                </label>
+                <DatePicker
+                    selected={bookingDates.checkOut}
+                    onChange={handleCheckOutChange} // <-- DÙNG HÀM MỚI
+                    
+                    minDate={minCheckOutDate} // <-- DÙNG BIẾN MỚI
+                    excludeDates={bookedDates} // Khóa ngày đã đặt
+                    
+                    placeholderText="Chọn ngày trả phòng"
+                    dateFormat="dd/MM/yyyy"
+                    locale="vi"
+                    
+                    selectsEnd
+                    startDate={bookingDates.checkIn}
+                    endDate={bookingDates.checkOut}
+                    
+                    disabled={!bookingDates.checkIn || loadingBookedDates} // Phải chọn check-in trước
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
+                    autoComplete="off"
+                />
+            </div>
 
-                                        {/* Ngày trả phòng */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Ngày trả phòng *
-                                            </label>
-                                            <input
-                                                type="date"
-                                                name="checkout"
-                                                value={bookingData.checkout}
-                                                onChange={handleChange}
-                                                min={
-                                                    bookingData.checkin || today
-                                                }
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
+            {/* Loading overlay */}
+            {loadingBookedDates && (
+                 <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg col-span-2 z-10">
+                     <div className="text-gray-600">Đang tải lịch...</div>
+                 </div>
+            )}
+        </div>
 
-                                    {/* Thông tin phòng */}
-                                    <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                                        <h4 className="font-semibold text-gray-800 mb-2">
-                                            {getRoomTypeName()}
-                                        </h4>
-                                        <p className="text-gray-600 text-sm">
-                                            {getRoomDescription()}
-                                        </p>
-                                        {bookingData.roomArea && (
-                                            <p className="text-gray-600 text-sm mt-1">
-                                                Diện tích:{" "}
-                                                {bookingData.roomArea}m²
-                                            </p>
-                                        )}
-                                        {bookingData.roomCapacity && (
-                                            <p className="text-gray-600 text-sm mt-1">
-                                                Sức chứa:{" "}
-                                                {bookingData.roomCapacity} người
-                                            </p>
-                                        )}
-                                    </div>
+        {/* Thông tin phòng */}
+        <div className="bg-gray-50 rounded-lg p-4 mt-4">
+            <h4 className="font-semibold text-gray-800 mb-2">
+                {bookingData.roomType || "Vui lòng chọn loại phòng"}
+            </h4>
+            <p className="text-gray-600 text-sm">
+                {bookingData.roomDescription || ""}
+            </p>
+            {bookingData.roomArea > 0 && (
+                <p className="text-gray-600 text-sm mt-1">
+                    Diện tích: {bookingData.roomArea}m²
+                </p>
+            )}
+            {bookingData.roomCapacity > 0 && (
+                <p className="text-gray-600 text-sm mt-1">
+                    Sức chứa: {bookingData.roomCapacity} người
+                </p>
+            )}
+        </div>
 
-                                    {/* Tổng chi phí */}
-                                    <div className="bg-rose-50 rounded-lg p-4 border border-rose-200">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="font-semibold text-rose-700">
-                                                    Tổng chi phí dự kiến
-                                                </p>
-                                                <p className="text-sm text-gray-600">
-                                                    {bookingData.quantity} phòng
-                                                    ×{" "}
-                                                    {(
-                                                        totalPrice /
-                                                        bookingData.quantity /
-                                                        Math.ceil(
-                                                            (new Date(
-                                                                bookingData.checkout,
-                                                            ) -
-                                                                new Date(
-                                                                    bookingData.checkin,
-                                                                )) /
-                                                                (1000 *
-                                                                    60 *
-                                                                    60 *
-                                                                    24),
-                                                        )
-                                                    ).toLocaleString()}
-                                                    ₫/đêm ×{" "}
-                                                    {Math.ceil(
-                                                        (new Date(
-                                                            bookingData.checkout,
-                                                        ) -
-                                                            new Date(
-                                                                bookingData.checkin,
-                                                            )) /
-                                                            (1000 *
-                                                                60 *
-                                                                60 *
-                                                                24),
-                                                    )}{" "}
-                                                    đêm
-                                                </p>
-                                            </div>
-                                            <span className="text-2xl font-bold text-amber-600">
-                                                {totalPrice.toLocaleString()}₫
-                                            </span>
-                                        </div>
-                                    </div>
+        {/* Tổng chi phí */}
+        <div className="bg-rose-50 rounded-lg p-4 border border-rose-200">
+            <div className="flex justify-between items-center">
+                <div>
+                    <p className="font-semibold text-rose-700">
+                        Tổng chi phí dự kiến
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        {bookingData.roomPrice.toLocaleString()} ₫/đêm
+                        × {nights} đêm 
+                        {/* Đảm bảo 'nights' được tính toán trong useEffect hoặc ở đâu đó */}
+                    </p>
+                </div>
+                <span className="text-2xl font-bold text-amber-600">
+                    {totalPrice.toLocaleString()}₫
+                    {/* Đảm bảo 'totalPrice' được tính toán */}
+                </span>
+            </div>
+        </div>
 
-                                    {/* Navigation */}
-                                    <button
-                                        onClick={nextStep}
-                                        className="w-full bg-rose-600 text-white py-3 px-6 rounded-lg hover:bg-rose-700 transition-colors font-semibold shadow-md hover:shadow-lg mt-4"
-                                    >
-                                        Tiếp Tục - Thông Tin Cá Nhân
-                                    </button>
-                                </div>
-                            )}
-
+        {/* Navigation */}
+        <button
+            onClick={nextStep}
+            className="w-full bg-rose-600 text-white py-3 px-6 rounded-lg hover:bg-rose-700 transition-colors font-semibold shadow-md hover:shadow-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            // Điều kiện disabled này bây giờ sẽ hoạt động chính xác
+            disabled={!bookingDates.checkIn || !bookingDates.checkOut || !bookingData.roomId}
+        >
+            Tiếp Tục - Thông Tin Cá Nhân
+        </button>
+    </div>
+)}
                             {/* Step 2: Customer Information */}
                             {step === 2 && (
                                 <div className="space-y-6">

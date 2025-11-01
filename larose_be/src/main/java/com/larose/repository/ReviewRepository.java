@@ -1,3 +1,5 @@
+// /src/main/java/com/larose/repository/ReviewRepository.java
+
 package com.larose.repository;
 
 import com.larose.entity.Review;
@@ -23,4 +25,16 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByRoomIdAndStatusOrderByCreatedAtDesc(Long roomId, Review.ReviewStatus status);
 
     boolean existsByBookingIdAndUserId(Long bookingId, Long userId);
+
+    // --- PHẦN THÊM MỚI ---
+    /**
+     * Tìm tất cả các đánh giá theo trạng thái (ví dụ: 'published', 'pending').
+     * Cần thiết cho phương thức getAllReviews() trong ReviewService.
+     */
+    List<Review> findByStatus(Review.ReviewStatus status);
+    
+    // --- KẾT THÚC PHẦN THÊM MỚI ---
+    
+    // Bạn cũng có thể thêm phương thức này nếu cần lấy cả Page và Status
+    Page<Review> findByStatus(Review.ReviewStatus status, Pageable pageable);
 }

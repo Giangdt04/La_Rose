@@ -24,12 +24,13 @@ public class TransactionService {
     @Transactional
     public TransactionResponse create(TransactionRequest request) {
         Transaction transaction = transactionMapper.toEntity(request);
+        transaction.setStatus(Transaction.Status.success);
         BookingDTO bookingDTO = bookingService.create(request.getBookingDTO());
         Booking getBookingByCode = bookingService.getBookingByCode(bookingDTO.getBookingCode());
         transaction.setUser(getBookingByCode.getUser());
         transaction.setBooking(getBookingByCode);
         if(request.getType().equals(StatusConstant.TransactionType.PAYMENT)){
-            transaction.setType(Transaction.Type.payment);
+            transaction.setType(Transaction.Type.PAYMENT);
             transaction.setStatus(Transaction.Status.success);
         }
 
