@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal; // ✅ SỬA: Thêm import
 import java.util.List;
 
 @RestController
@@ -16,6 +17,29 @@ import java.util.List;
 public class BookingController {
 
     private final BookingService bookingService;
+
+    // ✅ SỬA: Thêm endpoint này để phục vụ trang HistoryBookingPage.jsx
+    /**
+     * Lấy lịch sử đặt phòng của người dùng đã đăng nhập (FE đang gọi)
+     */
+    @GetMapping("/my-history")
+    public ResponseEntity<Page<BookingDTO>> getMyHistory(
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            Principal principal
+    ) {
+        if (principal == null) {
+            // Yêu cầu xác thực
+            return ResponseEntity.status(401).build(); 
+        }
+        
+        // FE gửi 'all' cho tất cả, service hiểu 'null' cho tất cả
+        String statusFilter = (status != null && status.equalsIgnoreCase("all")) ? null : status;
+
+        Page<BookingDTO> bookings = bookingService.getUserBookingsByStatus(principal.getName(), statusFilter, page, size);
+        return ResponseEntity.ok(bookings);
+    }
 
     @PutMapping("/cancel/{bookingId}")
     public ResponseEntity<?> cancelBooking(@PathVariable Long bookingId) {
@@ -30,8 +54,8 @@ public class BookingController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BookingDTO> update(@PathVariable Long id,@RequestBody BookingDTO bookingDTO) {
-        return ResponseEntity.ok(bookingService.update(id,bookingDTO));
+    public ResponseEntity<BookingDTO> update(@PathVariable Long id, @RequestBody BookingDTO bookingDTO) {
+        return ResponseEntity.ok(bookingService.update(id, bookingDTO));
     }
 
     @DeleteMapping("/{id}")

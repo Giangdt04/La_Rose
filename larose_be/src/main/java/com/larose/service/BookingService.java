@@ -91,7 +91,7 @@ public class BookingService {
     @Transactional
     public BookingDTO create(BookingDTO request) {
         Booking booking = bookingMapper.toBooking(request);
-        booking.setStatus(Booking.Status.confirmed); 
+        booking.setStatus(Booking.Status.confirmed);
         this.genCode(booking);
 
         User user = userService.findByEmailAndActive(request.getUserEmail());

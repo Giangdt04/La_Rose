@@ -75,7 +75,7 @@ public class SecurityConfig {
                     "/api/users/bookings/**",
                     "/api/users/reviews/**",
                     "/api/users/change-password",
-                    "/api/bookings/**",
+                    "/api/booking/**",
                     "/api/notifications/**",
                     "/api/conversations/**",
                     "/api/payments/create",

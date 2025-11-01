@@ -30,7 +30,7 @@ const ConfirmationContent = ({ bookingInfo, onResetBooking }) => {
     };
 
     const handleNewBooking = () => {
-        onResetBooking();
+      navigate("/rooms");
     };
 
     return (

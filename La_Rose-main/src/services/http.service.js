@@ -1,4 +1,3 @@
-// /src/services/http.service.js
 import axios from "axios";
 
 class HttpService {
@@ -19,10 +18,9 @@ class HttpService {
         // Request interceptor
         this.instance.interceptors.request.use(
             (config) => {
-                // ✅ SỬA: Không thêm token nếu config.skipAuth = true
-                // (Cho các endpoint public như room-types, check-availability)
+                // ✅ SỬA DÒNG NÀY: LẤY TOKEN TỪ localStorage
                 const token = localStorage.getItem("accessToken");
-                if (!config.skipAuth && token) {
+                if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
                 }
                 return config;
