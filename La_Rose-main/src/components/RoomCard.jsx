@@ -14,7 +14,30 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
     const formatPrice = (price) => {
         return price?.toLocaleString("vi-VN") || "0";
     };
+const parseAmenities = (amenities) => {
+  if (!amenities) return [];
 
+  let parsed = {};
+  try {
+    // Nếu amenities là string → parse JSON
+    if (typeof amenities === "string") {
+      parsed = JSON.parse(amenities);
+    } else if (typeof amenities === "object") {
+      parsed = amenities;
+    }
+  } catch (e) {
+    console.warn("Invalid amenities format:", amenities);
+    return [];
+  }
+
+  const list = [];
+  if (parsed.wifi) list.push("WiFi");
+  if (parsed.tv) list.push("TV");
+  if (parsed.air_conditioner) list.push("Điều hòa");
+  if (parsed.bathtub) list.push("Bồn tắm");
+  // Thêm tiện nghi khác nếu có
+  return list;
+};
     // Lấy trạng thái phòng
     const getStatusInfo = (status) => {
         switch (status) {
@@ -863,37 +886,27 @@ const RoomCard = ({ room, primaryImageUrl, onBookNow }) => {
                                 </div>
                             )}
 
-                            {/* Tiện nghi (từ DB, giả sử room.amenities là array [{name: 'WiFi'}, ...]) */}
-                            <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">
-                                    Tiện nghi phòng
-                                </h4>
-                                {room.amenities && room.amenities.length > 0 ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                                        {room.amenities.map((amenity, index) => (
-                                            <div key={index} className="flex items-center gap-2 text-gray-600">
-                                                <svg
-                                                    className="w-4 h-4 text-green-500"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M5 13l4 4L19 7"
-                                                    />
-                                                </svg>
-                                                {amenity.name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-600 text-sm">Không có thông tin tiện nghi.</p>
-                                )}
-                            </div>
-
+                       {/* Tiện nghi phòng */}
+<div className="mb-6">
+  <h4 className="font-semibold text-gray-900 mb-3">Tiện nghi phòng</h4>
+  {(() => {
+    const amenityList = parseAmenities(room.amenities);
+    return amenityList.length > 0 ? (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+        {amenityList.map((name, idx) => (
+          <div key={idx} className="flex items-center gap-2 text-gray-600">
+            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            {name}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-600 text-sm">Không có tiện nghi.</p>
+    );
+  })()}
+</div>
                             {/* Footer với nút hành động */}
                             <div className="flex gap-3 pt-6 border-t border-gray-200">
                                 <button

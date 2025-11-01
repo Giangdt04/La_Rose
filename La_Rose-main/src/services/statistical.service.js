@@ -1,4 +1,4 @@
-// services/statistical.service.js
+// /src/services/statistical.service.js
 import HttpService from "./http.service";
 
 class StatisticalService {
@@ -7,32 +7,21 @@ class StatisticalService {
         this.basePath = "/api/statistical";
     }
 
-    // Lấy danh sách phòng đã đặt (Public)
-    async getBookedRooms(minDate, maxDate) {
-        try {
-            // ✅ SỬA: Thêm { skipAuth: true }
-            return await this.httpService.get(
-                `${this.basePath}/rooms/booked?minDate=${minDate}&maxDate=${maxDate}`,
-                { skipAuth: true }
-            );
-        } catch (error) {
-            console.error("Error fetching booked rooms:", error);
-            throw error;
-        }
+    async getTotalRooms() {
+        return await this.httpService.get(`${this.basePath}/rooms/total`, { skipAuth: true });
     }
 
-    // Lấy thống kê doanh thu (Public)
-    async getRevenueStats(days = 7) {
-        try {
-            // ✅ SỬA: Thêm { skipAuth: true }
-            return await this.httpService.get(
-                `${this.basePath}/revenue?days=${days}`,
-                { skipAuth: true }
-            );
-        } catch (error) {
-            console.error("Error fetching revenue stats:", error);
-            throw error;
-        }
+    async getBookedRooms(minDate, maxDate) {
+        let url = `${this.basePath}/rooms/booked`;
+        const params = new URLSearchParams();
+        if (minDate) params.append("minDate", minDate);
+        if (maxDate) params.append("maxDate", maxDate);
+        if (params.toString()) url += `?${params.toString()}`;
+        return await this.httpService.get(url, { skipAuth: true });
+    }
+
+    async getRevenue(days = 7) {
+        return await this.httpService.get(`${this.basePath}/revenue?days=${days}`, { skipAuth: true });
     }
 }
 

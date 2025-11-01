@@ -6,7 +6,7 @@ import RoomCard from '../components/RoomCard';
 import ReviewCard from '../components/ReviewCard';
 import reviewService from '../services/review.service'; 
 import roomService from '../services/room.service'; 
-
+import anhnen from '../assets/pexels-pixabay-53464.jpg';
 /**
  * Component StarRating nội bộ để chọn sao.
  */
@@ -152,22 +152,29 @@ const HomePage = () => {
   return (
     <div>
       {/* Hero Section */}
-      <section className="hero-bg h-screen flex items-center justify-center text-center -mt-20">
-        <div className="animate-fade-in">
-          <h2 className="font-playfair text-5xl md:text-7xl font-bold text-rose-deep mb-6">
-            Chào mừng đến La Rosé
-          </h2>
-          <p className="text-xl md:text-2xl text-gray-700 mb-8 max-w-2xl mx-auto">
-            Trải nghiệm nghỉ dưỡng sang trọng với phong cách nữ tính tinh tế
-          </p>
-          <button 
-            onClick={() => navigate('/rooms')} 
-            className="bg-gradient-to-r from-pink-400 to-rose-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-          >
-            Đặt phòng ngay
-          </button>
-        </div>
-      </section>
+    <section
+  className="h-screen flex items-center justify-center text-center -mt-20 bg-cover bg-center bg-no-repeat"
+  style={{
+    backgroundImage: `url(${anhnen})`,
+  }}
+>
+  <div className="animate-fade-in bg-opacity-40 w-full h-full flex items-center justify-center">
+    <div className="text-white px-4">
+      <h2 className="font-playfair text-5xl md:text-7xl font-bold mb-6">
+        Chào mừng đến La Rosé
+      </h2>
+      <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
+        Trải nghiệm nghỉ dưỡng sang trọng với phong cách nữ tính tinh tế
+      </p>
+      <button 
+        onClick={() => navigate('/rooms')} 
+        className="bg-gradient-to-r from-pink-400 to-rose-500 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+      >
+        Đặt phòng ngay
+      </button>
+    </div>
+  </div>
+</section>
 
       {/* Featured Rooms */}
       <section className="container mx-auto px-6 py-16">

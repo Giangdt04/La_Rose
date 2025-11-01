@@ -82,7 +82,6 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
                 // Reset form
                 setFormData({
                     code: "",
-                    roomTypeId: "",
                     title: "",
                     description: "",
                     capacity: 1,
@@ -126,20 +125,6 @@ const AddRoomModal = ({ isOpen, onClose, onAddRoom }) => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Mã phòng *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="code"
-                                    value={formData.code}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                                    placeholder="VD: RM101"
-                                />
-                            </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">

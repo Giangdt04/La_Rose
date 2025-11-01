@@ -6,10 +6,16 @@ class RoomService {
         this.basePath = "/api/rooms";
     }
 
+    /**
+     * ✅ SỬA LỖI LOGIC:
+     * Viết lại hoàn toàn hàm này để gửi đúng param (keyword, minPrice, v.v.)
+     * mà RoomsPage.jsx cung cấp và RoomController.java mong đợi.
+     */
     async getAllRooms(params = {}) {
         try {
             const queryParams = new URLSearchParams();
 
+            // 1. Thêm tham số phân trang
             if (params.page !== undefined) {
                 queryParams.append("page", params.page);
             }
@@ -17,23 +23,31 @@ class RoomService {
                 queryParams.append("size", params.size);
             }
 
-            if (params.status) {
-                queryParams.append("status", params.status);
+            // 2. Thêm tham số filter (từ RoomsPage.jsx)
+            if (params.keyword) {
+                queryParams.append("keyword", params.keyword);
             }
-            if (params.type) {
-                queryParams.append("type", params.type);
+            if (params.minPrice) {
+                queryParams.append("minPrice", params.minPrice);
             }
-            if (params.search) {
-                queryParams.append("search", params.search);
+            if (params.maxPrice) {
+                queryParams.append("maxPrice", params.maxPrice);
             }
-
+            if (params.typeId) {
+                queryParams.append("typeId", params.typeId);
+            }
+            
             const queryString = queryParams.toString();
             const url = queryString
                 ? `${this.basePath}?${queryString}`
                 : this.basePath;
 
-            // ✅ SỬA: Thêm { skipAuth: true }
-            return await this.httpService.get(url, { skipAuth: true });
+            // Trang này công khai, nên thêm { skipAuth: true }
+            // (Nếu http.service.js của bạn không hỗ trợ, cứ bỏ 'config' đi)
+            const config = { skipAuth: true };
+            
+            return await this.httpService.get(url, config);
+
         } catch (error) {
             console.error("Error fetching rooms:", error);
             throw error;
@@ -42,99 +56,60 @@ class RoomService {
 
     async getRoomById(roomId) {
         try {
-            // ✅ SỬA: Thêm { skipAuth: true }
-            return await this.httpService.get(`${this.basePath}/${roomId}`, { skipAuth: true });
+            // Trang này công khai
+            const config = { skipAuth: true };
+            return await this.httpService.get(`${this.basePath}/${roomId}`, config);
         } catch (error) {
             console.error(`Error fetching room ${roomId}:`, error);
             throw error;
         }
     }
 
-    // (Hàm này dùng cho Admin, không cần skipAuth)
-    async createRoom(roomData) {
+    /**
+     * ✅ THÊM HÀM MỚI:
+     * Hàm này để lấy loại phòng cho bộ lọc (Dropdown)
+     * (RoomController của bạn đã có /api/rooms/types)
+     */
+    async getAllRoomTypes() {
         try {
-            return await this.httpService.post(this.basePath, roomData);
+            // Trang này công khai
+            const config = { skipAuth: true };
+            return await this.httpService.get(`${this.basePath}/types`, config);
+        } catch (error) {
+            console.error("Error fetching room types:", error);
+            throw error;
+        }
+    }
+
+
+    // (Các hàm create/update/delete... ở dưới)
+    // ...
+    // (Bạn cần đính kèm token cho các hàm này)
+
+    async createRoom(formData) {
+        try {
+            // Ví dụ: hàm create cần token
+            return await this.httpService.post(this.basePath, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
         } catch (error) {
             console.error("Error creating room:", error);
             throw error;
         }
     }
 
-    // (Hàm này dùng cho Admin, không cần skipAuth)
-    async updateRoom(roomId, roomData) {
+    async updateRoom(roomCode, formData) {
         try {
-            return await this.httpService.put(`${this.basePath}/${roomId}`, roomData);
-        } catch (error) {
-            console.error(`Error updating room ${roomId}:`, error);
-            throw error;
-        }
-    }
-
-    // (Hàm này dùng cho Admin, không cần skipAuth)
-    async deleteRoom(roomId) {
-        try {
-            return await this.httpService.delete(`${this.basePath}/${roomId}`);
-        } catch (error) {
-            console.error(`Error deleting room ${roomId}:`, error);
-            throw error;
-        }
-    }
-
-    async searchRooms(params = {}) {
-        try {
-            const queryParams = new URLSearchParams();
-
-            Object.keys(params).forEach((key) => {
-                if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
-                    queryParams.append(key, params[key]);
-                }
+            // Ví dụ: hàm update cần token
+            return await this.httpService.put(`${this.basePath}/${roomCode}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
             });
-
-            const queryString = queryParams.toString();
-            const url = queryString
-                ? `${this.basePath}/search?${queryString}`
-                : `${this.basePath}/search`;
-
-            // ✅ SỬA: Thêm { skipAuth: true }
-            return await this.httpService.get(url, { skipAuth: true });
         } catch (error) {
-            console.error("Error searching rooms:", error);
-            throw error;
-        }
-    }
-
-    async getRoomImages(roomId) {
-        try {
-            // ✅ SỬA: Phải truyền skipAuth cho hàm getRoomById
-            const room = await this.getRoomById(roomId); // Hàm này đã được skipAuth
-            return room.images || [];
-        } catch (error) {
-            console.error(`Error fetching images for room ${roomId}:`, error);
-            throw error;
-        }
-    }
-
-    async getPrimaryRoomImage(roomId) {
-        try {
-            // ✅ SỬA: Phải truyền skipAuth cho hàm getRoomImages
-            const images = await this.getRoomImages(roomId); // Hàm này đã được skipAuth
-            const primaryImage = images.find((img) => img.isPrimary);
-            return primaryImage ? primaryImage.url : images[0]?.url || null;
-        } catch (error) {
-            console.error(
-                `Error fetching primary image for room ${roomId}:`,
-                error,
-            );
-            throw error;
-        }
-    }
-    
-    async getAllRoomTypes() {
-        try {
-            // ✅ SỬA: Thêm { skipAuth: true }
-            return await this.httpService.get(`${this.basePath}/types`, { skipAuth: true });
-        } catch (error) {
-            console.error("Error fetching room types:", error);
+            console.error(`Error updating room ${roomCode}:`, error);
             throw error;
         }
     }
