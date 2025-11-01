@@ -3,7 +3,7 @@ package com.larose.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpMethod; // ✅ SỬA: Thêm import này
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -48,34 +48,43 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/**",
                     "/api/statistical/**",
-                    "/api/rooms/**",
+                    // "/api/rooms/**", // ✅ SỬA: Xóa dòng này đi, đưa xuống dưới
                     "/api/public/**",
                     "/api/email/**",
                     "/api/health",
                     "/api/config",
-                    "/api/room-types/**",
-                    "/api/booking/check-availability",       // ✅ Kiểm tra phòng trống (guest)
-                    "/api/vnpay/submit-order",              // ✅ Tạo đơn VNPay (guest)
-                    "/api/vnpay/vnpay_return",              // ✅ Callback từ VNPay
-                    "/vnpay/**",                            // ✅ (Phòng trường hợp callback dùng URL khác)
+                    "/api/room-types/**", // Giữ lại, vì booking.service dùng
+                    "/api/booking/check-availability",
+                    "/api/vnpay/submit-order",
+                    "/api/vnpay/vnpay_return",
+                    "/vnpay/**",
                     "/api/payments/webhook/**",
                     "/v3/api-docs/**",
                     "/v3/api-docs",
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/reviews", "/api/reviews/**").permitAll()
+
+                // ✅ SỬA: Thêm khối này để cho phép xem (GET)
+                // Đây là API cho HomePage, RoomsPage, AboutPage
+                .requestMatchers(HttpMethod.GET,
+                		"/api/rooms",
+                	    "/api/rooms/*",
+                	    "/api/rooms/**",
+                	    "/api/reviews",
+                	    "/api/reviews/*",
+                	    "/api/reviews/**",
+                	    "/api/booking/booking-date/**"
+                ).permitAll()
 
                 // 2. CÁC ENDPOINT CỦA USER (Yêu cầu xác thực)
-                .requestMatchers(HttpMethod.POST, "/api/reviews").hasAnyRole("USER", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/reviews").hasAnyRole("USER", "ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").hasAnyRole("USER", "ADMIN")
+                // Đặt phòng (POST), hủy phòng (PUT), xem lịch sử (GET) mới cần đăng nhập
                 .requestMatchers(
                     "/api/users/profile/**",
                     "/api/users/bookings/**",
                     "/api/users/reviews/**",
                     "/api/users/change-password",
-                    "/api/booking/**",
+                    "/api/booking/**", // ✅ SỬA: Rule này BẢO VỆ việc đặt phòng (POST/PUT)
                     "/api/notifications/**",
                     "/api/conversations/**",
                     "/api/payments/create",
@@ -85,6 +94,12 @@ public class SecurityConfig {
                     "/api/transaction",
                     "/api/transaction/**"
                 ).hasAnyRole("USER", "ADMIN")
+                
+                // POST review cũng cần đăng nhập
+                .requestMatchers(HttpMethod.POST, "/api/reviews").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/reviews").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/reviews/**").hasAnyRole("USER", "ADMIN")
+
 
                 // 3. CÁC ENDPOINT CỦA ADMIN
                 .requestMatchers(

@@ -18,7 +18,11 @@ class HttpService {
         // Request interceptor
         this.instance.interceptors.request.use(
             (config) => {
-                // ✅ SỬA DÒNG NÀY: LẤY TOKEN TỪ localStorage
+                // ✅ SỬA 1: Nếu config có skipAuth: true, không gửi token
+                if (config.skipAuth) {
+                    return config;
+                }
+                
                 const token = localStorage.getItem("accessToken");
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
@@ -36,11 +40,19 @@ class HttpService {
                 return response;
             },
             (error) => {
-                if (error.response?.status === 401) {
+                // ✅ SỬA 2: Chỉ redirect nếu lỗi 401 VÀ request đó *KHÔNG* phải là skipAuth
+                if (
+                    error.response?.status === 401 &&
+                    !error.config?.skipAuth // Không redirect nếu đây là request public
+                ) {
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("refreshToken");
                     localStorage.removeItem("userInfo");
-                    window.location.href = "/login";
+                    
+                    // Thêm kiểm tra "window" để an toàn
+                    if (typeof window !== 'undefined') {
+                        window.location.href = "/login";
+                    }
                 }
                 return Promise.reject(error);
             },

@@ -41,13 +41,9 @@ const Header = () => {
     useEffect(() => {
         const token = session.getToken();
         const userInfor = session.getUser();
-        const currentPath = window.location.pathname;
 
         if (!token || !userInfor) {
             setIsLoggedIn(false);
-            if (!currentPath.includes("/verify")) {
-                navigate("/login");
-            }
         } else {
             setIsLoggedIn(true);
             console.log(userInfor);

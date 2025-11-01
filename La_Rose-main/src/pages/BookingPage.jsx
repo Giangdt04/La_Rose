@@ -414,7 +414,14 @@ const [bookingDates, setBookingDates] = useState({
 
 // Khởi tạo dữ liệu đặt phòng (dùng hằng số ở trên)
 const [bookingData, setBookingData] = useState(getInitialBookingData());
-
+ useEffect(() => {
+    const token = session.getToken();
+    const user = session.getUser();
+    
+    if (!token || !user) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
 // --- XỬ LÝ CALLBACK VNPAY (Giữ nguyên) ---
 useEffect(() => {
     const vnp_ResponseCode = searchParams.get("vnp_ResponseCode");

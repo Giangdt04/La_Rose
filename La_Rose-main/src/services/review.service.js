@@ -8,7 +8,7 @@ class ReviewService {
         this.basePath = "/api/reviews";
     }
 
-    // Tạo đánh giá (Dùng cho HomePage.jsx - Đã OK)
+    // Tạo đánh giá (Yêu cầu đăng nhập, không skipAuth)
     async createReview(reviewData) {
         try {
             return await this.httpService.post(this.basePath, reviewData);
@@ -18,14 +18,9 @@ class ReviewService {
         }
     }
 
-    // --- PHẦN MỚI ĐƯỢC THÊM ---
-    /**
-     * Cập nhật đánh giá (Update).
-     * Đây là hàm gọi PUT /api/reviews và gây ra lỗi nếu reviewData không có 'id'.
-     */
+    // Cập nhật đánh giá (Yêu cầu đăng nhập, không skipAuth)
     async updateReview(reviewData) {
         try {
-            // reviewData BẮT BUỘC phải chứa "id"
             if (!reviewData.id) {
                 throw new Error("ID của đánh giá là bắt buộc khi cập nhật.");
             }
@@ -35,20 +30,13 @@ class ReviewService {
             throw error;
         }
     }
-    // --- KẾT THÚC PHẦN MỚI ---
 
-    // Phản hồi đánh giá (Dành cho Admin - PUT /api/reviews/response)
-    async respondToReview(responseData) {
+    // Phản hồi đánh giá (Admin, không skipAuth)
+    async responseReview(responseData) {
         try {
-            // responseData cũng BẮT BUỘC phải chứa "id" (của response)
-            // nếu không cũng sẽ gây lỗi "IllegalArgumentException"
-            // từ ReviewResponseService
-            if (!responseData.id) {
-                 // Hoặc nếu bạn dùng để tạo mới thì phải có reviewId
-                 if (!responseData.reviewId) {
-                    throw new Error("ID của đánh giá (reviewId) là bắt buộc khi phản hồi.");
-                 }
-            }
+             if (!responseData.reviewId) {
+                 throw new Error("ID của đánh giá là bắt buộc khi phản hồi.");
+             }
             return await this.httpService.put(
                 `${this.basePath}/response`,
                 responseData,
@@ -59,11 +47,13 @@ class ReviewService {
         }
     }
 
-    // Lấy đánh giá theo phòng
+    // Lấy đánh giá theo phòng (Public)
     async getReviewsByRoom(roomId) {
         try {
+            // ✅ SỬA: Thêm { skipAuth: true }
             return await this.httpService.get(
                 `${this.basePath}/room/${roomId}`,
+                { skipAuth: true } // Thêm vào đây
             );
         } catch (error) {
             console.error("Error fetching room reviews:", error);
@@ -71,7 +61,7 @@ class ReviewService {
         }
     }
 
-    // Lấy tất cả đánh giá (Dùng cho HomePage.jsx - Đã OK)
+    // Lấy tất cả đánh giá (Public, dùng cho HomePage)
     async getAllReviews(params = {}) {
         try {
             const queryParams = new URLSearchParams();
@@ -87,7 +77,8 @@ class ReviewService {
                 ? `${this.basePath}?${queryString}`
                 : this.basePath;
 
-            return await this.httpService.get(url);
+            // ✅ SỬA: Thêm { skipAuth: true }
+            return await this.httpService.get(url, { skipAuth: true }); // Thêm vào đây
         } catch (error) {
             console.error("Error fetching reviews:", error);
             throw error;
