@@ -18,11 +18,12 @@ public class VnpayController {
 
     @PostMapping("/submit-order")
     public ResponseEntity<String> submitOrder(
-            @RequestParam("amount") BigDecimal orderTotal,
-            @RequestParam("orderInfo") String orderInfo,
-            @RequestParam("roomId") String roomId) {
+    		   @RequestParam("amount") BigDecimal amount,
+    	        @RequestParam("orderInfo") String orderInfo,
+    	        @RequestParam("roomId") String roomId,
+    	        @RequestParam("txnRef") String txnRef){
 
-        String paymentUrl = vnpayService.createOrder(orderTotal, orderInfo, roomId);
+        String paymentUrl = vnpayService.createOrder(amount, orderInfo, roomId, txnRef);
         return ResponseEntity.ok(paymentUrl);
     }
 

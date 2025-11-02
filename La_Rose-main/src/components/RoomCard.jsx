@@ -377,33 +377,6 @@ const parseAmenities = (amenities) => {
             </div>,
         );
 
-        // Sức chứa (ước tính nếu không có từ DB)
-        const getEstimatedCapacity = (roomType) => {
-            const typeName = roomType?.name?.toLowerCase() || "";
-            switch (typeName) {
-                case "standard":
-                    return 2;
-                case "deluxe":
-                    return 2;
-                case "suite":
-                    return 3;
-                case "family":
-                    return 4;
-                case "executive":
-                    return 2;
-                case "studio":
-                    return 2;
-                case "apartment":
-                    return 4;
-                case "accessible":
-                    return 2;
-                case "honeymoon":
-                    return 2;
-                default:
-                    return 2;
-            }
-        };
-
         details.push(
             <div
                 key="capacity"
@@ -422,7 +395,7 @@ const parseAmenities = (amenities) => {
                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a2 2 0 11-4 0 2 2 0 014 0z"
                     />
                 </svg>
-                <span>Sức chứa: {room.capacity || getEstimatedCapacity(room.roomType)} người</span>
+                <span>Sức chứa: {room.capacity} người</span>
             </div>,
         );
 
@@ -809,7 +782,7 @@ const parseAmenities = (amenities) => {
                                                     Sức chứa:
                                                 </span>
                                                 <span className="font-medium">
-                                                   {room.capacity || getEstimatedCapacity(room.roomType)} người
+                                                   {room.capacity} người
                                                 </span>
                                             </div>
                                         </div>

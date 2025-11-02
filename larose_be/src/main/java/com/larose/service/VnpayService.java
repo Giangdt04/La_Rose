@@ -22,7 +22,7 @@ public class VnpayService {
 
     private final InvoiceService invoiceService;
 
-    public String createOrder(BigDecimal total, String orderInfo, String roomId) {
+    public String createOrder(BigDecimal total, String orderInfo, String roomId, String txnRef) {
 
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
@@ -37,7 +37,7 @@ public class VnpayService {
         vnp_Params.put("vnp_TmnCode", vnp_TmnCode);
         vnp_Params.put("vnp_Amount", total.multiply(BigDecimal.valueOf(100)).toPlainString());
         vnp_Params.put("vnp_CurrCode", "VND");
-
+        vnp_Params.put("vnp_TxnRef", txnRef);
         vnp_Params.put("vnp_TxnRef", roomId);
         vnp_Params.put("vnp_OrderInfo", orderInfo);
         vnp_Params.put("vnp_OrderType", orderType);
@@ -114,7 +114,7 @@ public class VnpayService {
             if ("00".equals(request.getParameter("vnp_TransactionStatus"))) {
                 try {
                     Long roomId = Long.valueOf(request.getParameter("vnp_TxnRef"));
-
+                    String txnRef = request.getParameter("vnp_TxnRef"); 
                     String email = invoiceService.sendInvoice(roomId);
 
                     log.info("Invoice sent successfully to email={} for roomId={}", email, roomId);
