@@ -781,7 +781,7 @@ const parseAmenities = (amenities) => {
                                                             "";
                                                         switch (typeName) {
                                                             case "standard":
-                                                                return "25-30 m²";
+                                                                return "26-30 m²";
                                                             case "deluxe":
                                                                 return "35-40 m²";
                                                             case "suite":
